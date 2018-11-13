@@ -8,12 +8,12 @@ namespace Minsk.CodeAnalysis
     internal class Emitter
     {
         private readonly BoundStatement _root;
-        private readonly ILProcessor _iLProcessor;
+        private readonly ILProcessor _il;
 
         public Emitter(BoundStatement root, ILProcessor iLProcessor)
         {
             _root = root;
-            _iLProcessor = iLProcessor;
+            _il = iLProcessor;
         }
 
         public void Emit()
@@ -84,6 +84,7 @@ namespace Minsk.CodeAnalysis
 
         private void EmitLiteralExpression(BoundLiteralExpression n)
         {
+            _il.Append(_il.Create(OpCodes.Ldc_I4, (int)n.Value));
             // _iLProcessor.Append
             // return n.Value;
         }

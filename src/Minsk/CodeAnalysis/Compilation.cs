@@ -68,7 +68,7 @@ namespace Minsk.CodeAnalysis
             var emitBuilder = new EmitBuilder();
             var emitter = new Emitter(GlobalScope.Statement, emitBuilder.ILProcessor);
 
-            // emitter.Emit();
+            emitter.Emit();
             emitBuilder.Build();
 
             return new EmitResult(ImmutableArray<Diagnostic>.Empty);
@@ -131,11 +131,12 @@ namespace Minsk.CodeAnalysis
 
         public void Build()
         {
-            il.Append(il.Create(OpCodes.Nop));
-            il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
+            // il.Append(il.Create(OpCodes.Nop));
+            // il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
+            // il.Append(il.Create(OpCodes.Ldc_I4, 10));
 
             var writeLineMethod = il.Create(OpCodes.Call,
-                module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(string) })));
+                module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(int) })));
 
             // call the method
             il.Append(writeLineMethod);
