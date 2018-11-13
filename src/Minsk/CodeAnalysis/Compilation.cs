@@ -81,6 +81,7 @@ namespace Minsk.CodeAnalysis
         ModuleDefinition module;
         TypeDefinition programType;
         MethodDefinition ctor;
+        MethodDefinition mainMethod;
         ILProcessor il;
 
         public EmitBuilder()
@@ -100,12 +101,6 @@ namespace Minsk.CodeAnalysis
 
             // create the constructor's method body
             il = ctor.Body.GetILProcessor();
-        }
-
-        public ILProcessor ILProcessor => il;
-
-        public void Build()
-        {
             il.Append(il.Create(OpCodes.Ldarg_0));
 
             // call the base constructor
@@ -117,7 +112,7 @@ namespace Minsk.CodeAnalysis
             programType.Methods.Add(ctor);
 
             // define the 'Main' method and add it to 'Program'
-            var mainMethod = new MethodDefinition("Main",
+            mainMethod = new MethodDefinition("Main",
                 Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
 
             programType.Methods.Add(mainMethod);
@@ -130,7 +125,12 @@ namespace Minsk.CodeAnalysis
 
             // create the method body
             il = mainMethod.Body.GetILProcessor();
+        }
 
+        public ILProcessor ILProcessor => il;
+
+        public void Build()
+        {
             il.Append(il.Create(OpCodes.Nop));
             il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
 
