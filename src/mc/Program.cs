@@ -5,6 +5,8 @@ using System.Text;
 using Minsk.CodeAnalysis;
 using Minsk.CodeAnalysis.Syntax;
 using Minsk.CodeAnalysis.Text;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Minsk
 {
@@ -68,7 +70,8 @@ namespace Minsk
                                     ? new Compilation(syntaxTree)
                                     : previous.ContinueWith(syntaxTree);
 
-                var result = compilation.Evaluate(variables);
+                // var result = compilation.Evaluate(variables);
+                var result = compilation.Emit();
 
                 if (showTree)
                 {
@@ -78,7 +81,7 @@ namespace Minsk
                 if (!result.Diagnostics.Any())
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
-                    Console.WriteLine(result.Value);
+                    Console.WriteLine("EMITTED!!!");
                     Console.ResetColor();
                     previous = compilation;
                 }
@@ -122,6 +125,11 @@ namespace Minsk
 
                 textBuilder.Clear();
             }
+        }
+
+        private static void Emit(Compilation compilation)
+        {
+            throw new NotImplementedException();
         }
     }
 }

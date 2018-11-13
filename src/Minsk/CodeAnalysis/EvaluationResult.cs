@@ -13,4 +13,14 @@ namespace Minsk.CodeAnalysis
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public object Value { get; }
     }
+
+    public sealed class EmitResult
+    {
+        public EmitResult(ImmutableArray<Diagnostic> diagnostics)
+        {
+            Diagnostics = diagnostics;
+        }
+
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
+    }
 }
