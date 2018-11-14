@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Minsk.CodeAnalysis.Binding;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
 {
@@ -19,9 +23,85 @@ namespace Minsk.CodeAnalysis
 
         public object Evaluate()
         {
-            throw new NotImplementedException();
-            EvaluateStatement(_root);
-            return _lastValue;
+            var myHelloWorldApp = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition("HelloWorld", new Version(1, 0, 0, 0)), "HelloWorld", ModuleKind.Console);
+
+            var module = myHelloWorldApp.MainModule;
+
+            // create the program type and add it to the module
+            var programType = new TypeDefinition("HelloWorld", "Program",
+                Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.Public, module.TypeSystem.Object);
+
+            module.Types.Add(programType);
+
+            // add an empty constructor
+            var ctor = new MethodDefinition(".ctor", Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig
+                | Mono.Cecil.MethodAttributes.SpecialName | Mono.Cecil.MethodAttributes.RTSpecialName, module.TypeSystem.Void);
+
+            // create the constructor's method body
+            var il = ctor.Body.GetILProcessor();
+
+            il.Append(il.Create(OpCodes.Ldarg_0));
+
+            // call the base constructor
+            il.Append(il.Create(OpCodes.Call, module.Import(typeof(object).GetConstructor(Array.Empty<Type>()))));
+
+            il.Append(il.Create(OpCodes.Nop));
+            il.Append(il.Create(OpCodes.Ret));
+
+            programType.Methods.Add(ctor);
+
+            // define the 'Main' method and add it to 'Program'
+            var mainMethod = new MethodDefinition("Main",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+
+            programType.Methods.Add(mainMethod);
+
+            // add the 'args' parameter
+            var argsParameter = new ParameterDefinition("args",
+                Mono.Cecil.ParameterAttributes.None, module.Import(typeof(string[])));
+
+            mainMethod.Parameters.Add(argsParameter);
+
+            // create the method body
+            il = mainMethod.Body.GetILProcessor();
+
+            il.Append(il.Create(OpCodes.Nop));
+            il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
+
+            var writeLineMethod = il.Create(OpCodes.Call,
+                module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(string) })));
+
+            // call the method
+            il.Append(writeLineMethod);
+
+            il.Append(il.Create(OpCodes.Nop));
+            il.Append(il.Create(OpCodes.Ret));
+
+            // set the entry point and save the module
+            myHelloWorldApp.EntryPoint = mainMethod;
+            // myHelloWorldApp.Write("HelloWorld.exe");
+            using (var ms = new MemoryStream())
+            {
+                myHelloWorldApp.Write(ms);
+
+                ms.Position = 0;
+                var peBytes = ms.ToArray();
+
+                var assembly = Assembly.Load(peBytes);
+
+                var p = assembly.GetType("HelloWorld.Program", throwOnError: true);
+
+                var m = p.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
+
+                m.Invoke(null, new object[] { new string[] { "test" } });
+
+                throw new NotImplementedException("Finished up to here.");
+
+                // EvaluateStatement(_root);
+                return _lastValue;
+            }
+
         }
 
         private void EvaluateStatement(BoundStatement node)
