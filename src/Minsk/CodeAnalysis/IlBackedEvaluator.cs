@@ -27,7 +27,7 @@ namespace Minsk.CodeAnalysis
             _il = ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
-            _il.Append(_il.Create(OpCodes.Ret));
+            _il.Emit(OpCodes.Ret);
 
             var hostMethod = ilBuilder.Build();
             var result = hostMethod.Invoke();
@@ -58,13 +58,13 @@ namespace Minsk.CodeAnalysis
             EmitExpression(node.Initializer);
             if (_variables.TryGetValue(node.Variable, out var slot))
             {
-                _il.Append(_il.Create(OpCodes.Stloc, slot));
+                _il.Emit(OpCodes.Stloc, slot);
             }
             else
             {
                 slot = _nextFreeVariableSlot++;
                 _variables[node.Variable] = slot;
-                _il.Append(_il.Create(OpCodes.Stloc, slot));
+                _il.Emit(OpCodes.Stloc, slot);
             }
             // _lastValue = value;
         }
@@ -106,13 +106,13 @@ namespace Minsk.CodeAnalysis
 
         private void EmitLiteralExpression(BoundLiteralExpression n)
         {
-            _il.Append(_il.Create(OpCodes.Ldc_I4, (int)n.Value));
+            _il.Emit(OpCodes.Ldc_I4, (int)n.Value);
         }
 
         private void EmitVariableExpression(BoundVariableExpression v)
         {
             var slot = _variables[v.Variable];
-            _il.Append(_il.Create(OpCodes.Ldloc, slot));
+            _il.Emit(OpCodes.Ldloc, slot);
         }
 
         // private object EvaluateAssignmentExpression(BoundAssignmentExpression a)
@@ -131,7 +131,7 @@ namespace Minsk.CodeAnalysis
                 case BoundUnaryOperatorKind.Identity:
                     break;
                 case BoundUnaryOperatorKind.Negation:
-                    _il.Append(_il.Create(OpCodes.Neg));
+                    _il.Emit(OpCodes.Neg);
                     break;
                 // case BoundUnaryOperatorKind.LogicalNegation:
                 //     return !(bool)operand;
@@ -148,16 +148,16 @@ namespace Minsk.CodeAnalysis
             switch (b.Op.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    _il.Append(_il.Create(OpCodes.Add));
+                    _il.Emit(OpCodes.Add);
                     break;
                 case BoundBinaryOperatorKind.Subtraction:
-                    _il.Append(_il.Create(OpCodes.Sub));
+                    _il.Emit(OpCodes.Sub);
                     break;
                 case BoundBinaryOperatorKind.Multiplication:
-                    _il.Append(_il.Create(OpCodes.Mul));
+                    _il.Emit(OpCodes.Mul);
                     break;
                 case BoundBinaryOperatorKind.Division:
-                    _il.Append(_il.Create(OpCodes.Div));
+                    _il.Emit(OpCodes.Div);
                     break;
                 // case BoundBinaryOperatorKind.LogicalAnd:
                 //     return (bool)left && (bool)right;
