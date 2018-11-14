@@ -84,7 +84,23 @@ namespace Minsk.CodeAnalysis
 
         private void EmitLiteralExpression(BoundLiteralExpression n)
         {
-            _il.Append(_il.Create(OpCodes.Ldc_I4, (int)n.Value));
+            switch (n.Value)
+            {
+                case int i:
+                    _il.Append(_il.Create(OpCodes.Ldc_I4, (int)n.Value));
+                    break;
+                case bool b when b:
+                    _il.Append(_il.Create(OpCodes.Ldc_I4_1));
+                    break;
+                case bool b when !b:
+                    _il.Append(_il.Create(OpCodes.Ldc_I4_0));
+                    break;
+                default:
+                    throw new Exception($"Unexpected literal value, type: {n.Value.GetType()}");
+
+
+
+            }
             // _iLProcessor.Append
             // return n.Value;
         }
