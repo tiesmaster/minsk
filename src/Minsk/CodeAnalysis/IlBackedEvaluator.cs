@@ -35,23 +35,6 @@ namespace Minsk.CodeAnalysis
 
             module.Types.Add(programType);
 
-            // add an empty constructor
-            var ctor = new MethodDefinition(".ctor", Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.HideBySig
-                | Mono.Cecil.MethodAttributes.SpecialName | Mono.Cecil.MethodAttributes.RTSpecialName, module.TypeSystem.Void);
-
-            // create the constructor's method body
-            var il = ctor.Body.GetILProcessor();
-
-            il.Append(il.Create(OpCodes.Ldarg_0));
-
-            // call the base constructor
-            il.Append(il.Create(OpCodes.Call, module.Import(typeof(object).GetConstructor(Array.Empty<Type>()))));
-
-            il.Append(il.Create(OpCodes.Nop));
-            il.Append(il.Create(OpCodes.Ret));
-
-            programType.Methods.Add(ctor);
-
             // define the 'Main' method and add it to 'Program'
             var mainMethod = new MethodDefinition("Main",
                 Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.Import(typeof(int)));
