@@ -37,17 +37,18 @@ namespace Minsk.CodeAnalysis
 
         private AssemblyDefinition PrepareIlWriter()
         {
+            var name = "HostAssembly";
             var hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition("HelloWorld", new Version(1, 0, 0, 0)), "HelloWorld", ModuleKind.Dll);
+                new AssemblyNameDefinition(name, new Version(1, 0, 0, 0)), name, ModuleKind.Dll);
 
             var hostModule = hostAssemblyDefinition.MainModule;
 
-            var hostTypeDefinition = new TypeDefinition("HelloWorld", "Program",
+            var hostTypeDefinition = new TypeDefinition(null, "HostType",
                 Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.Public, hostModule.TypeSystem.Object);
 
             hostModule.Types.Add(hostTypeDefinition);
 
-            var hostMethodDefinition = new MethodDefinition("Main",
+            var hostMethodDefinition = new MethodDefinition("HostMethod",
                 Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
 
             hostTypeDefinition.Methods.Add(hostMethodDefinition);
@@ -72,8 +73,8 @@ namespace Minsk.CodeAnalysis
 
         private static int InvokeHostMethod(Assembly hostAssembly)
         {
-            var hostType = hostAssembly.GetType("HelloWorld.Program");
-            var hostMethod = hostType.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
+            var hostType = hostAssembly.GetType("HostType");
+            var hostMethod = hostType.GetMethod("HostMethod", BindingFlags.Static | BindingFlags.Public);
             var result = (int)hostMethod.Invoke(null, null);
 
             return result;
