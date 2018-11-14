@@ -217,13 +217,15 @@ namespace Minsk.CodeAnalysis
                 case BoundBinaryOperatorKind.Addition:
                     _il.Append(_il.Create(OpCodes.Add));
                     break;
-                // return (int)left + (int)right;
-                // case BoundBinaryOperatorKind.Subtraction:
-                //     return (int)left - (int)right;
-                // case BoundBinaryOperatorKind.Multiplication:
-                //     return (int)left * (int)right;
-                // case BoundBinaryOperatorKind.Division:
-                //     return (int)left / (int)right;
+                case BoundBinaryOperatorKind.Subtraction:
+                    _il.Append(_il.Create(OpCodes.Sub));
+                    break;
+                case BoundBinaryOperatorKind.Multiplication:
+                    _il.Append(_il.Create(OpCodes.Mul));
+                    break;
+                case BoundBinaryOperatorKind.Division:
+                    _il.Append(_il.Create(OpCodes.Div));
+                    break;
                 // case BoundBinaryOperatorKind.LogicalAnd:
                 //     return (bool)left && (bool)right;
                 // case BoundBinaryOperatorKind.LogicalOr:
