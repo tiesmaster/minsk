@@ -18,6 +18,7 @@ namespace Minsk.CodeAnalysis
                 new AssemblyNameDefinition(_hostAssemblyName, new Version(1, 0, 0, 0)), _hostAssemblyName, ModuleKind.Dll);
 
             var hostModule = _hostAssemblyDefinition.MainModule;
+            var intType = hostModule.ImportReference(typeof(int));
 
             var hostTypeDefinition = new TypeDefinition(null, _hostTypeName,
                 TypeAttributes.Class | TypeAttributes.Public, hostModule.TypeSystem.Object);
@@ -25,11 +26,13 @@ namespace Minsk.CodeAnalysis
             hostModule.Types.Add(hostTypeDefinition);
 
             var hostMethodDefinition = new MethodDefinition(_hostMethodName,
-                MethodAttributes.Public | MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
+                MethodAttributes.Public | MethodAttributes.Static, intType);
 
             hostTypeDefinition.Methods.Add(hostMethodDefinition);
 
             HostMethodIlProcessor = hostMethodDefinition.Body.GetILProcessor();
+
+            hostMethodDefinition.Body.Variables.Add(new VariableDefinition(intType));
         }
 
         public ILProcessor HostMethodIlProcessor { get; }

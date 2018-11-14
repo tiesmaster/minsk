@@ -9,7 +9,8 @@ namespace Minsk.CodeAnalysis
     internal sealed class IlBackedEvaluator
     {
         private readonly BoundStatement _root;
-        private readonly Dictionary<VariableSymbol, object> _variables;
+        private readonly Dictionary<VariableSymbol, int> _variables;
+        private int _nextFreeVariableSlot;
 
         // private object _lastValue;
         private ILProcessor _il;
@@ -17,7 +18,7 @@ namespace Minsk.CodeAnalysis
         public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
-            _variables = variables;
+            _variables = new Dictionary<VariableSymbol, int>();
         }
 
         public object Evaluate()
@@ -38,12 +39,12 @@ namespace Minsk.CodeAnalysis
         {
             switch (node.Kind)
             {
-                // case BoundNodeKind.BlockStatement:
-                //     EmitBlockStatement((BoundBlockStatement)node);
-                //     break;
-                // case BoundNodeKind.VariableDeclaration:
-                //     EmitVariableDeclaration((BoundVariableDeclaration)node);
-                //     break;
+                case BoundNodeKind.BlockStatement:
+                    EmitBlockStatement((BoundBlockStatement)node);
+                    break;
+                case BoundNodeKind.VariableDeclaration:
+                    EmitVariableDeclaration((BoundVariableDeclaration)node);
+                    break;
                 case BoundNodeKind.ExpressionStatement:
                     EmitExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -52,18 +53,27 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        // private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
-        // {
-        //     var value = EvaluateExpression(node.Initializer);
-        //     _variables[node.Variable] = value;
-        //     _lastValue = value;
-        // }
+        private void EmitVariableDeclaration(BoundVariableDeclaration node)
+        {
+            EmitExpression(node.Initializer);
+            if (_variables.TryGetValue(node.Variable, out var slot))
+            {
+                _il.Append(_il.Create(OpCodes.Stloc, slot));
+            }
+            else
+            {
+                slot = _nextFreeVariableSlot++;
+                _variables[node.Variable] = slot;
+                _il.Append(_il.Create(OpCodes.Stloc, slot));
+            }
+            // _lastValue = value;
+        }
 
-        // private void EvaluateBlockStatement(BoundBlockStatement node)
-        // {
-        //     foreach (var statement in node.Statements)
-        //         EvaluateStatement(statement);
-        // }
+        private void EmitBlockStatement(BoundBlockStatement node)
+        {
+            foreach (var statement in node.Statements)
+                EmitStatement(statement);
+        }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
         {
@@ -78,8 +88,9 @@ namespace Minsk.CodeAnalysis
                 case BoundNodeKind.LiteralExpression:
                     EmitLiteralExpression((BoundLiteralExpression)node);
                     break;
-                // case BoundNodeKind.VariableExpression:
-                //     return EvaluateVariableExpression((BoundVariableExpression)node);
+                case BoundNodeKind.VariableExpression:
+                    EmitVariableExpression((BoundVariableExpression)node);
+                    break;
                 // case BoundNodeKind.AssignmentExpression:
                 //     return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
                 case BoundNodeKind.UnaryExpression:
@@ -98,10 +109,11 @@ namespace Minsk.CodeAnalysis
             _il.Append(_il.Create(OpCodes.Ldc_I4, (int)n.Value));
         }
 
-        // private object EvaluateVariableExpression(BoundVariableExpression v)
-        // {
-        //     return _variables[v.Variable];
-        // }
+        private void EmitVariableExpression(BoundVariableExpression v)
+        {
+            var slot = _variables[v.Variable];
+            _il.Append(_il.Create(OpCodes.Ldloc, slot));
+        }
 
         // private object EvaluateAssignmentExpression(BoundAssignmentExpression a)
         // {

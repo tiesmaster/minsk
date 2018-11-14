@@ -67,7 +67,7 @@ namespace Minsk.Tests.CodeAnalysis
         // [InlineData("{ var a = 0 (a = 10) * a }", 100)]
 
         // [InlineData("var a = 10", 10)]
-        // [InlineData("{ var a = 10 (a * a) }", 100)]
+        [InlineData("{ var a = 10 (a * a) }", 100)]
         public void JitEvaluator_Computes_CorrectValues(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.Parse(text);
