@@ -52,11 +52,6 @@ namespace Minsk.CodeAnalysis
 
             hostTypeDefinition.Methods.Add(hostMethodDefinition);
 
-            var argsParameter = new ParameterDefinition("args",
-                Mono.Cecil.ParameterAttributes.None, hostModule.ImportReference(typeof(string[])));
-
-            hostMethodDefinition.Parameters.Add(argsParameter);
-
             _il = hostMethodDefinition.Body.GetILProcessor();
 
             return hostAssemblyDefinition;
@@ -79,7 +74,7 @@ namespace Minsk.CodeAnalysis
         {
             var hostType = hostAssembly.GetType("HelloWorld.Program");
             var hostMethod = hostType.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
-            var result = (int)hostMethod.Invoke(null, new object[] { new string[] { string.Empty } });
+            var result = (int)hostMethod.Invoke(null, null);
 
             return result;
         }
