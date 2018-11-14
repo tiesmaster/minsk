@@ -23,12 +23,12 @@ namespace Minsk.CodeAnalysis
         public object Evaluate()
         {
             var ilBuilder = new IlBuilder();
-            _il = ilBuilder._il;
+            _il = ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
             _il.Append(_il.Create(OpCodes.Ret));
 
-            var hostAssembly = ilBuilder.FinalizeHostAssembly();
+            var hostAssembly = ilBuilder.Build();
             var result = InvokeHostMethod(hostAssembly);
 
             return result;

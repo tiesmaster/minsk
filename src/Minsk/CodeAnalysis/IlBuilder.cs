@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -8,8 +7,7 @@ namespace Minsk.CodeAnalysis
 {
     internal class IlBuilder
     {
-        internal readonly ILProcessor _il;
-        private AssemblyDefinition _hostAssemblyDefinition;
+        private readonly AssemblyDefinition _hostAssemblyDefinition;
 
         public IlBuilder()
         {
@@ -20,26 +18,28 @@ namespace Minsk.CodeAnalysis
             var hostModule = _hostAssemblyDefinition.MainModule;
 
             var hostTypeDefinition = new TypeDefinition(null, "HostType",
-                Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.Public, hostModule.TypeSystem.Object);
+                TypeAttributes.Class | TypeAttributes.Public, hostModule.TypeSystem.Object);
 
             hostModule.Types.Add(hostTypeDefinition);
 
             var hostMethodDefinition = new MethodDefinition("HostMethod",
-                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
+                MethodAttributes.Public | MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
 
             hostTypeDefinition.Methods.Add(hostMethodDefinition);
 
-            _il = hostMethodDefinition.Body.GetILProcessor();
+            HostMethodIlProcessor = hostMethodDefinition.Body.GetILProcessor();
         }
 
-        public Assembly FinalizeHostAssembly()
+        public ILProcessor HostMethodIlProcessor { get; private set; }
+
+        public System.Reflection.Assembly Build()
         {
             using (var ms = new MemoryStream())
             {
                 _hostAssemblyDefinition.Write(ms);
 
                 var peBytes = ms.ToArray();
-                var assembly = Assembly.Load(peBytes);
+                var assembly = System.Reflection.Assembly.Load(peBytes);
 
                 return assembly;
             }
