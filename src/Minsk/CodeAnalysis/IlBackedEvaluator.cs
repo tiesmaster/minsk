@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using Minsk.CodeAnalysis.Binding;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
@@ -24,51 +22,16 @@ namespace Minsk.CodeAnalysis
 
         public object Evaluate()
         {
-            var hostAssemblyDefinition = PrepareIlWriter();
+            var ilBuilder = new IlBuilder();
+            _il = ilBuilder._il;
 
             EmitStatement(_root);
             _il.Append(_il.Create(OpCodes.Ret));
 
-            var hostAssembly = FinalizeHostAssembly(hostAssemblyDefinition);
+            var hostAssembly = ilBuilder.FinalizeHostAssembly();
             var result = InvokeHostMethod(hostAssembly);
 
             return result;
-        }
-
-        private AssemblyDefinition PrepareIlWriter()
-        {
-            var name = "HostAssembly";
-            var hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(name, new Version(1, 0, 0, 0)), name, ModuleKind.Dll);
-
-            var hostModule = hostAssemblyDefinition.MainModule;
-
-            var hostTypeDefinition = new TypeDefinition(null, "HostType",
-                Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.Public, hostModule.TypeSystem.Object);
-
-            hostModule.Types.Add(hostTypeDefinition);
-
-            var hostMethodDefinition = new MethodDefinition("HostMethod",
-                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
-
-            hostTypeDefinition.Methods.Add(hostMethodDefinition);
-
-            _il = hostMethodDefinition.Body.GetILProcessor();
-
-            return hostAssemblyDefinition;
-        }
-
-        private static Assembly FinalizeHostAssembly(AssemblyDefinition hostAssemblyDefinition)
-        {
-            using (var ms = new MemoryStream())
-            {
-                hostAssemblyDefinition.Write(ms);
-
-                var peBytes = ms.ToArray();
-                var assembly = Assembly.Load(peBytes);
-
-                return assembly;
-            }
         }
 
         private static int InvokeHostMethod(Assembly hostAssembly)
