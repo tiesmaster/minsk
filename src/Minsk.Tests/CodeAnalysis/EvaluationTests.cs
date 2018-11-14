@@ -48,7 +48,7 @@ namespace Minsk.Tests.CodeAnalysis
         // [InlineData("12 - 3", 9)]
         // [InlineData("4 * 2", 8)]
         // [InlineData("9 / 3", 3)]
-        // [InlineData("(10)", 10)]
+        [InlineData("(10)", 10)]
         // [InlineData("12 == 3", false)]
         // [InlineData("3 == 3", true)]
         // [InlineData("12 != 3", true)]
