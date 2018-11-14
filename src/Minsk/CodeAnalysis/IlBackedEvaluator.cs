@@ -22,23 +22,14 @@ namespace Minsk.CodeAnalysis
 
         public object Evaluate()
         {
-            var ilBuilder = new IlBuilder();
+            var ilBuilder = new HostMethodBuilder();
             _il = ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
             _il.Append(_il.Create(OpCodes.Ret));
 
-            var hostAssembly = ilBuilder.Build();
-            var result = InvokeHostMethod(hostAssembly);
-
-            return result;
-        }
-
-        private static int InvokeHostMethod(Assembly hostAssembly)
-        {
-            var hostType = hostAssembly.GetType("HostType");
-            var hostMethod = hostType.GetMethod("HostMethod", BindingFlags.Static | BindingFlags.Public);
-            var result = (int)hostMethod.Invoke(null, null);
+            var hostMethod = ilBuilder.Build();
+            var result = hostMethod.Invoke();
 
             return result;
         }

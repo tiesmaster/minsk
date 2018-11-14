@@ -1,28 +1,30 @@
-using System;
+﻿using System;
 using System.IO;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
 {
-    internal class IlBuilder
+    internal class HostMethodBuilder
     {
         private readonly AssemblyDefinition _hostAssemblyDefinition;
+        private const string _hostAssemblyName = "HostAssembly";
+        private const string _hostTypeName = "HostType";
+        private const string _hostMethodName = "HostMethod";
 
-        public IlBuilder()
+        public HostMethodBuilder()
         {
-            var name = "HostAssembly";
             _hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(name, new Version(1, 0, 0, 0)), name, ModuleKind.Dll);
+                new AssemblyNameDefinition(_hostAssemblyName, new Version(1, 0, 0, 0)), _hostAssemblyName, ModuleKind.Dll);
 
             var hostModule = _hostAssemblyDefinition.MainModule;
 
-            var hostTypeDefinition = new TypeDefinition(null, "HostType",
+            var hostTypeDefinition = new TypeDefinition(null, _hostTypeName,
                 TypeAttributes.Class | TypeAttributes.Public, hostModule.TypeSystem.Object);
 
             hostModule.Types.Add(hostTypeDefinition);
 
-            var hostMethodDefinition = new MethodDefinition("HostMethod",
+            var hostMethodDefinition = new MethodDefinition(_hostMethodName,
                 MethodAttributes.Public | MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
 
             hostTypeDefinition.Methods.Add(hostMethodDefinition);
@@ -30,9 +32,9 @@ namespace Minsk.CodeAnalysis
             HostMethodIlProcessor = hostMethodDefinition.Body.GetILProcessor();
         }
 
-        public ILProcessor HostMethodIlProcessor { get; private set; }
+        public ILProcessor HostMethodIlProcessor { get; }
 
-        public System.Reflection.Assembly Build()
+        public HostMethod Build()
         {
             using (var ms = new MemoryStream())
             {
@@ -41,7 +43,7 @@ namespace Minsk.CodeAnalysis
                 var peBytes = ms.ToArray();
                 var assembly = System.Reflection.Assembly.Load(peBytes);
 
-                return assembly;
+                return new HostMethod(assembly, _hostTypeName, _hostMethodName);
             }
         }
     }
