@@ -24,6 +24,19 @@ namespace Minsk.CodeAnalysis
 
         public object Evaluate()
         {
+            var hostAssemblyDefinition = PrepareIlWriter();
+
+            EmitStatement(_root);
+            _il.Append(_il.Create(OpCodes.Ret));
+
+            var hostAssembly = FinalizeHostAssembly(hostAssemblyDefinition);
+            var result = InvokeHostMethod(hostAssembly);
+
+            return result;
+        }
+
+        private AssemblyDefinition PrepareIlWriter()
+        {
             var myHelloWorldApp = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition("HelloWorld", new Version(1, 0, 0, 0)), "HelloWorld", ModuleKind.Console);
 
@@ -49,28 +62,29 @@ namespace Minsk.CodeAnalysis
 
             // create the method body
             _il = mainMethod.Body.GetILProcessor();
+            return myHelloWorldApp;
+        }
 
-            EmitStatement(_root);
-
-            _il.Append(_il.Create(OpCodes.Ret));
-
-            myHelloWorldApp.EntryPoint = mainMethod;
+        private static Assembly FinalizeHostAssembly(AssemblyDefinition hostAssemblyDefinition)
+        {
             using (var ms = new MemoryStream())
             {
-                myHelloWorldApp.Write(ms);
+                hostAssemblyDefinition.Write(ms);
 
                 var peBytes = ms.ToArray();
-
                 var assembly = Assembly.Load(peBytes);
 
-                var p = assembly.GetType("HelloWorld.Program", throwOnError: true);
-
-                var m = p.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
-
-                var result = (int)m.Invoke(null, new object[] { new string[] { "test" } });
-
-                return result;
+                return assembly;
             }
+        }
+
+        private static int InvokeHostMethod(Assembly hostAssembly)
+        {
+            var hostType = hostAssembly.GetType("HelloWorld.Program");
+            var hostMethod = hostType.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
+            var result = (int)hostMethod.Invoke(null, new object[] { new string[] { string.Empty } });
+
+            return result;
         }
 
         private void EmitStatement(BoundStatement node)
