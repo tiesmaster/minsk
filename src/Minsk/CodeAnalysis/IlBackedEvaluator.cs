@@ -42,25 +42,23 @@ namespace Minsk.CodeAnalysis
 
             var hostModule = hostAssemblyDefinition.MainModule;
 
-            var programType = new TypeDefinition("HelloWorld", "Program",
+            var hostTypeDefinition = new TypeDefinition("HelloWorld", "Program",
                 Mono.Cecil.TypeAttributes.Class | Mono.Cecil.TypeAttributes.Public, hostModule.TypeSystem.Object);
 
-            hostModule.Types.Add(programType);
+            hostModule.Types.Add(hostTypeDefinition);
 
-            // define the 'Main' method and add it to 'Program'
-            var mainMethod = new MethodDefinition("Main",
-                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, hostModule.Import(typeof(int)));
+            var hostMethodDefinition = new MethodDefinition("Main",
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, hostModule.ImportReference(typeof(int)));
 
-            programType.Methods.Add(mainMethod);
+            hostTypeDefinition.Methods.Add(hostMethodDefinition);
 
-            // add the 'args' parameter
             var argsParameter = new ParameterDefinition("args",
-                Mono.Cecil.ParameterAttributes.None, hostModule.Import(typeof(string[])));
+                Mono.Cecil.ParameterAttributes.None, hostModule.ImportReference(typeof(string[])));
 
-            mainMethod.Parameters.Add(argsParameter);
+            hostMethodDefinition.Parameters.Add(argsParameter);
 
-            // create the method body
-            _il = mainMethod.Body.GetILProcessor();
+            _il = hostMethodDefinition.Body.GetILProcessor();
+
             return hostAssemblyDefinition;
         }
 
