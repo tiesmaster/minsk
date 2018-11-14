@@ -199,8 +199,9 @@ namespace Minsk.CodeAnalysis
             {
                 case BoundUnaryOperatorKind.Identity:
                     break;
-                // case BoundUnaryOperatorKind.Negation:
-                //     return -(int)operand;
+                case BoundUnaryOperatorKind.Negation:
+                    _il.Append(_il.Create(OpCodes.Neg));
+                    break;
                 // case BoundUnaryOperatorKind.LogicalNegation:
                 //     return !(bool)operand;
                 default:
