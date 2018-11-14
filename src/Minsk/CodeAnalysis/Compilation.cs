@@ -45,15 +45,24 @@ namespace Minsk.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, bool useJitting = false)
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var evaluator = new Evaluator(GlobalScope.Statement, variables);
-            var value = evaluator.Evaluate();
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            if (useJitting)
+            {
+                var evaluator = new JitEvaluator(GlobalScope.Statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
+            else
+            {
+                var evaluator = new Evaluator(GlobalScope.Statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
         }
     }
 }
