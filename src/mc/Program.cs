@@ -82,6 +82,8 @@ namespace Minsk
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
                     Console.WriteLine("EMITTED!!!");
+                    var p = System.Diagnostics.Process.Start("mono", "HelloWorld.exe");
+                    p.WaitForExit();
                     Console.ResetColor();
                     previous = compilation;
                 }

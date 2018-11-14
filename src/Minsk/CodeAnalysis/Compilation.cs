@@ -86,6 +86,7 @@ namespace Minsk.CodeAnalysis
 
         public EmitBuilder()
         {
+#pragma warning disable CS0618
             myHelloWorldApp = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition("HelloWorld", new Version(1, 0, 0, 0)), "HelloWorld", ModuleKind.Console);
             module = myHelloWorldApp.MainModule;
@@ -147,6 +148,7 @@ namespace Minsk.CodeAnalysis
             // set the entry point and save the module
             myHelloWorldApp.EntryPoint = mainMethod;
             myHelloWorldApp.Write("HelloWorld.exe");
+#pragma warning restore CS0618
         }
     }
 }
