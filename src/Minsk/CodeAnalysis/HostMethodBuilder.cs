@@ -17,7 +17,7 @@ namespace Minsk.CodeAnalysis
         private const string _hostMethodName = "HostMethod";
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
-        private int _nextFreeVariableSlot;
+        private int _nextFreeVariableSlot = 1;
 
         public HostMethodBuilder()
         {
@@ -39,6 +39,8 @@ namespace Minsk.CodeAnalysis
             hostTypeDefinition.Methods.Add(_hostMethodDefinition);
 
             HostMethodIlProcessor = _hostMethodDefinition.Body.GetILProcessor();
+
+            AddVariable();
         }
 
         public ILProcessor HostMethodIlProcessor { get; }
@@ -64,10 +66,15 @@ namespace Minsk.CodeAnalysis
             }
             var freeSlot = _nextFreeVariableSlot++;
 
-            _variables[variable] = existingSlot;
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(_intType));
+            _variables[variable] = freeSlot;
+            AddVariable();
 
             return freeSlot;
+        }
+
+        private void AddVariable()
+        {
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(_intType));
         }
 
         public int GetVariableSlot(VariableSymbol variable)

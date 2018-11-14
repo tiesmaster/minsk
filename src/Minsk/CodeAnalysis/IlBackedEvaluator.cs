@@ -10,7 +10,6 @@ namespace Minsk.CodeAnalysis
     {
         private readonly BoundStatement _root;
 
-        // private object _lastValue;
         private HostMethodBuilder _ilBuilder;
         private ILProcessor _il;
 
@@ -25,12 +24,18 @@ namespace Minsk.CodeAnalysis
             _il = _ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
+            PushResultVariableToStack();
             _il.Emit(OpCodes.Ret);
 
             var hostMethod = _ilBuilder.Build();
             var result = hostMethod.Invoke();
 
             return result;
+        }
+
+        private void PushResultVariableToStack()
+        {
+            _il.Emit(OpCodes.Ldloc_0);
         }
 
         private void EmitStatement(BoundStatement node)
@@ -57,7 +62,8 @@ namespace Minsk.CodeAnalysis
             var slot = _ilBuilder.GetOrCreateVariableSlot(node.Variable);
             _il.Emit(OpCodes.Stloc, slot);
 
-            // _lastValue = value;
+            _il.Emit(OpCodes.Ldloc, slot);
+            PopLastValueToResultVariable();
         }
 
         private void EmitBlockStatement(BoundBlockStatement node)
@@ -68,8 +74,13 @@ namespace Minsk.CodeAnalysis
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
         {
-            // _lastValue = EvaluateExpression(node.Expression);
             EmitExpression(node.Expression);
+            PopLastValueToResultVariable();
+        }
+
+        private void PopLastValueToResultVariable()
+        {
+            _il.Emit(OpCodes.Stloc_0);
         }
 
         private void EmitExpression(BoundExpression node)
