@@ -165,8 +165,9 @@ namespace Minsk.CodeAnalysis
                 //     return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
                 // case BoundNodeKind.UnaryExpression:
                 //     return EvaluateUnaryExpression((BoundUnaryExpression)node);
-                // case BoundNodeKind.BinaryExpression:
-                //     return EvaluateBinaryExpression((BoundBinaryExpression)node);
+                case BoundNodeKind.BinaryExpression:
+                    EmitBinaryExpression((BoundBinaryExpression)node);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {node.Kind}");
             }
@@ -206,32 +207,34 @@ namespace Minsk.CodeAnalysis
         //     }
         // }
 
-        // private object EvaluateBinaryExpression(BoundBinaryExpression b)
-        // {
-        //     var left = EvaluateExpression(b.Left);
-        //     var right = EvaluateExpression(b.Right);
+        private void EmitBinaryExpression(BoundBinaryExpression b)
+        {
+            EmitExpression(b.Left);
+            EmitExpression(b.Right);
 
-        //     switch (b.Op.Kind)
-        //     {
-        //         case BoundBinaryOperatorKind.Addition:
-        //             return (int)left + (int)right;
-        //         case BoundBinaryOperatorKind.Subtraction:
-        //             return (int)left - (int)right;
-        //         case BoundBinaryOperatorKind.Multiplication:
-        //             return (int)left * (int)right;
-        //         case BoundBinaryOperatorKind.Division:
-        //             return (int)left / (int)right;
-        //         case BoundBinaryOperatorKind.LogicalAnd:
-        //             return (bool)left && (bool)right;
-        //         case BoundBinaryOperatorKind.LogicalOr:
-        //             return (bool)left || (bool)right;
-        //         case BoundBinaryOperatorKind.Equals:
-        //             return Equals(left, right);
-        //         case BoundBinaryOperatorKind.NotEquals:
-        //             return !Equals(left, right);
-        //         default:
-        //             throw new Exception($"Unexpected binary operator {b.Op}");
-        //     }
-        // }
+            switch (b.Op.Kind)
+            {
+                case BoundBinaryOperatorKind.Addition:
+                    _il.Append(_il.Create(OpCodes.Add));
+                    break;
+                // return (int)left + (int)right;
+                // case BoundBinaryOperatorKind.Subtraction:
+                //     return (int)left - (int)right;
+                // case BoundBinaryOperatorKind.Multiplication:
+                //     return (int)left * (int)right;
+                // case BoundBinaryOperatorKind.Division:
+                //     return (int)left / (int)right;
+                // case BoundBinaryOperatorKind.LogicalAnd:
+                //     return (bool)left && (bool)right;
+                // case BoundBinaryOperatorKind.LogicalOr:
+                //     return (bool)left || (bool)right;
+                // case BoundBinaryOperatorKind.Equals:
+                //     return Equals(left, right);
+                // case BoundBinaryOperatorKind.NotEquals:
+                //     return !Equals(left, right);
+                default:
+                    throw new Exception($"Unexpected binary operator {b.Op}");
+            }
+        }
     }
 }
