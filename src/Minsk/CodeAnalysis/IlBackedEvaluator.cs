@@ -163,8 +163,9 @@ namespace Minsk.CodeAnalysis
                 //     return EvaluateVariableExpression((BoundVariableExpression)node);
                 // case BoundNodeKind.AssignmentExpression:
                 //     return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
-                // case BoundNodeKind.UnaryExpression:
-                //     return EvaluateUnaryExpression((BoundUnaryExpression)node);
+                case BoundNodeKind.UnaryExpression:
+                    EmitUnaryExpression((BoundUnaryExpression)node);
+                    break;
                 case BoundNodeKind.BinaryExpression:
                     EmitBinaryExpression((BoundBinaryExpression)node);
                     break;
@@ -190,22 +191,22 @@ namespace Minsk.CodeAnalysis
         //     return value;
         // }
 
-        // private object EvaluateUnaryExpression(BoundUnaryExpression u)
-        // {
-        //     var operand = EvaluateExpression(u.Operand);
+        private void EmitUnaryExpression(BoundUnaryExpression u)
+        {
+            EmitExpression(u.Operand);
 
-        //     switch (u.Op.Kind)
-        //     {
-        //         case BoundUnaryOperatorKind.Identity:
-        //             return (int)operand;
-        //         case BoundUnaryOperatorKind.Negation:
-        //             return -(int)operand;
-        //         case BoundUnaryOperatorKind.LogicalNegation:
-        //             return !(bool)operand;
-        //         default:
-        //             throw new Exception($"Unexpected unary operator {u.Op}");
-        //     }
-        // }
+            switch (u.Op.Kind)
+            {
+                case BoundUnaryOperatorKind.Identity:
+                    break;
+                // case BoundUnaryOperatorKind.Negation:
+                //     return -(int)operand;
+                // case BoundUnaryOperatorKind.LogicalNegation:
+                //     return !(bool)operand;
+                default:
+                    throw new Exception($"Unexpected unary operator {u.Op}");
+            }
+        }
 
         private void EmitBinaryExpression(BoundBinaryExpression b)
         {

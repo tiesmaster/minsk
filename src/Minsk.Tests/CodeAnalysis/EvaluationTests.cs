@@ -42,7 +42,7 @@ namespace Minsk.Tests.CodeAnalysis
 
         [Theory]
         [InlineData("1", 1)]
-        // [InlineData("+1", 1)]
+        [InlineData("+1", 1)]
         // [InlineData("-1", -1)]
         [InlineData("14 + 12", 26)]
         [InlineData("12 - 3", 9)]
