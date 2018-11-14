@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -8,7 +8,7 @@ using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
 {
-    internal sealed class JitEvaluator
+    internal sealed class IlBackedEvaluator
     {
         private readonly BoundStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
@@ -16,7 +16,7 @@ namespace Minsk.CodeAnalysis
         private object _lastValue;
         private ILProcessor _il;
 
-        public JitEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
+        public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;

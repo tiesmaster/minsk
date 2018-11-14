@@ -34,7 +34,7 @@ namespace Minsk.CodeAnalysis
                 {
                     var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
-                }    
+                }
 
                 return _globalScope;
             }
@@ -53,7 +53,7 @@ namespace Minsk.CodeAnalysis
 
             if (useJitting)
             {
-                var evaluator = new JitEvaluator(GlobalScope.Statement, variables);
+                var evaluator = new IlBackedEvaluator(GlobalScope.Statement, variables);
                 var value = evaluator.Evaluate();
                 return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
             }
