@@ -53,7 +53,7 @@ namespace Minsk.CodeAnalysis
 
             // define the 'Main' method and add it to 'Program'
             var mainMethod = new MethodDefinition("Main",
-                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.TypeSystem.Void);
+                Mono.Cecil.MethodAttributes.Public | Mono.Cecil.MethodAttributes.Static, module.Import(typeof(int)));
 
             programType.Methods.Add(mainMethod);
 
@@ -66,16 +66,19 @@ namespace Minsk.CodeAnalysis
             // create the method body
             il = mainMethod.Body.GetILProcessor();
 
-            il.Append(il.Create(OpCodes.Nop));
-            il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
+            // il.Append(il.Create(OpCodes.Nop));
+            // il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
 
-            var writeLineMethod = il.Create(OpCodes.Call,
-                module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(string) })));
+            // var writeLineMethod = il.Create(OpCodes.Call,
+            //     module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(string) })));
 
-            // call the method
-            il.Append(writeLineMethod);
+            // // call the method
+            // il.Append(writeLineMethod);
 
-            il.Append(il.Create(OpCodes.Nop));
+            // il.Append(il.Create(OpCodes.Nop));
+            // il.Append(il.Create(OpCodes.Ret));
+
+            il.Append(il.Create(OpCodes.Ldc_I4_0));
             il.Append(il.Create(OpCodes.Ret));
 
             // set the entry point and save the module
@@ -85,7 +88,6 @@ namespace Minsk.CodeAnalysis
             {
                 myHelloWorldApp.Write(ms);
 
-                ms.Position = 0;
                 var peBytes = ms.ToArray();
 
                 var assembly = Assembly.Load(peBytes);
@@ -94,7 +96,11 @@ namespace Minsk.CodeAnalysis
 
                 var m = p.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
 
-                m.Invoke(null, new object[] { new string[] { "test" } });
+                var result = (int)m.Invoke(null, new object[] { new string[] { "test" } });
+                if (result != 0)
+                {
+                    throw new Exception();
+                }
 
                 throw new NotImplementedException("Finished up to here.");
 
