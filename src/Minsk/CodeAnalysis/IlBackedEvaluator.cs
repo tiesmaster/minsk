@@ -93,8 +93,9 @@ namespace Minsk.CodeAnalysis
                 case BoundNodeKind.VariableExpression:
                     EmitVariableExpression((BoundVariableExpression)node);
                     break;
-                // case BoundNodeKind.AssignmentExpression:
-                //     return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
+                case BoundNodeKind.AssignmentExpression:
+                    EmitAssignmentExpression((BoundAssignmentExpression)node);
+                    break;
                 case BoundNodeKind.UnaryExpression:
                     EmitUnaryExpression((BoundUnaryExpression)node);
                     break;
@@ -117,12 +118,15 @@ namespace Minsk.CodeAnalysis
             _il.Emit(OpCodes.Ldloc, slot);
         }
 
-        // private object EvaluateAssignmentExpression(BoundAssignmentExpression a)
-        // {
-        //     var value = EvaluateExpression(a.Expression);
-        //     _variables[a.Variable] = value;
-        //     return value;
-        // }
+        private void EmitAssignmentExpression(BoundAssignmentExpression a)
+        {
+            EmitExpression(a.Expression);
+
+            var slot = _ilBuilder.GetVariableSlot(a.Variable);
+
+            _il.Emit(OpCodes.Stloc, slot);
+            _il.Emit(OpCodes.Ldloc, slot);
+        }
 
         private void EmitUnaryExpression(BoundUnaryExpression u)
         {
