@@ -13,7 +13,7 @@ namespace Minsk.CodeAnalysis
         private readonly BoundStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
-        private object _lastValue;
+        // private object _lastValue;
         private ILProcessor _il;
 
         public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
