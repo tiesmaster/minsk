@@ -8,13 +8,13 @@ namespace Minsk.CodeAnalysis
 {
     internal class HostMethodBuilder
     {
-        private readonly AssemblyDefinition _hostAssemblyDefinition;
-        private readonly MethodDefinition _hostMethodDefinition;
-        private readonly TypeReference _intType;
-
         private const string _hostAssemblyName = "HostAssembly";
         private const string _hostTypeName = "HostType";
         private const string _hostMethodName = "HostMethod";
+
+        private readonly AssemblyDefinition _hostAssemblyDefinition;
+        private readonly MethodDefinition _hostMethodDefinition;
+        private readonly TypeReference _intType;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
         private int _nextFreeVariableSlot = 1;
