@@ -67,27 +67,11 @@ namespace Minsk.CodeAnalysis
             // create the method body
             _il = mainMethod.Body.GetILProcessor();
 
-            // il.Append(il.Create(OpCodes.Nop));
-            // il.Append(il.Create(OpCodes.Ldstr, "Hello World"));
-
-            // var writeLineMethod = il.Create(OpCodes.Call,
-            //     module.Import(typeof(Console).GetMethod("WriteLine", new[] { typeof(string) })));
-
-            // // call the method
-            // il.Append(writeLineMethod);
-
-            // il.Append(il.Create(OpCodes.Nop));
-            // il.Append(il.Create(OpCodes.Ret));
-
-            // _il.Append(_il.Create(OpCodes.Ldc_I4_0));
-
             EmitStatement(_root);
 
             _il.Append(_il.Create(OpCodes.Ret));
 
-            // set the entry point and save the module
             myHelloWorldApp.EntryPoint = mainMethod;
-            // myHelloWorldApp.Write("HelloWorld.exe");
             using (var ms = new MemoryStream())
             {
                 myHelloWorldApp.Write(ms);
@@ -101,15 +85,6 @@ namespace Minsk.CodeAnalysis
                 var m = p.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
 
                 var result = (int)m.Invoke(null, new object[] { new string[] { "test" } });
-                // if (result != 0)
-                // {
-                //     throw new Exception();
-                // }
-
-                // throw new NotImplementedException("Finished up to here.");
-
-                // EvaluateStatement(_root);
-                // return _lastValue;
 
                 return result;
             }
