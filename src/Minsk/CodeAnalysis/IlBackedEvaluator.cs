@@ -9,27 +9,25 @@ namespace Minsk.CodeAnalysis
     internal sealed class IlBackedEvaluator
     {
         private readonly BoundStatement _root;
-        private readonly Dictionary<VariableSymbol, int> _variables;
-        private int _nextFreeVariableSlot;
 
         // private object _lastValue;
+        private HostMethodBuilder _ilBuilder;
         private ILProcessor _il;
 
         public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
-            _variables = new Dictionary<VariableSymbol, int>();
         }
 
         public object Evaluate()
         {
-            var ilBuilder = new HostMethodBuilder();
-            _il = ilBuilder.HostMethodIlProcessor;
+            _ilBuilder = new HostMethodBuilder();
+            _il = _ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
             _il.Emit(OpCodes.Ret);
 
-            var hostMethod = ilBuilder.Build();
+            var hostMethod = _ilBuilder.Build();
             var result = hostMethod.Invoke();
 
             return result;
@@ -56,16 +54,9 @@ namespace Minsk.CodeAnalysis
         private void EmitVariableDeclaration(BoundVariableDeclaration node)
         {
             EmitExpression(node.Initializer);
-            if (_variables.TryGetValue(node.Variable, out var slot))
-            {
-                _il.Emit(OpCodes.Stloc, slot);
-            }
-            else
-            {
-                slot = _nextFreeVariableSlot++;
-                _variables[node.Variable] = slot;
-                _il.Emit(OpCodes.Stloc, slot);
-            }
+            var slot = _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            _il.Emit(OpCodes.Stloc, slot);
+
             // _lastValue = value;
         }
 
@@ -111,7 +102,7 @@ namespace Minsk.CodeAnalysis
 
         private void EmitVariableExpression(BoundVariableExpression v)
         {
-            var slot = _variables[v.Variable];
+            var slot = _ilBuilder.GetVariableSlot(v.Variable);
             _il.Emit(OpCodes.Ldloc, slot);
         }
 
