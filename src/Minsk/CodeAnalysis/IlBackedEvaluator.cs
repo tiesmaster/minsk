@@ -179,10 +179,12 @@ namespace Minsk.CodeAnalysis
                 case BoundBinaryOperatorKind.Division:
                     _il.Emit(OpCodes.Div);
                     break;
-                // case BoundBinaryOperatorKind.LogicalAnd:
-                //     return (bool)left && (bool)right;
-                // case BoundBinaryOperatorKind.LogicalOr:
-                //     return (bool)left || (bool)right;
+                case BoundBinaryOperatorKind.LogicalAnd:
+                    _il.Emit(OpCodes.And);
+                    break;
+                case BoundBinaryOperatorKind.LogicalOr:
+                    _il.Emit(OpCodes.Or);
+                    break;
                 case BoundBinaryOperatorKind.Equals:
                     _il.Emit(OpCodes.Ceq);
                     break;
