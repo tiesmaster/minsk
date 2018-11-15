@@ -153,8 +153,10 @@ namespace Minsk.CodeAnalysis
                 case BoundUnaryOperatorKind.Negation:
                     _il.Emit(OpCodes.Neg);
                     break;
-                // case BoundUnaryOperatorKind.LogicalNegation:
-                //     return !(bool)operand;
+                case BoundUnaryOperatorKind.LogicalNegation:
+                    _il.Emit(OpCodes.Ldc_I4_0);
+                    _il.Emit(OpCodes.Ceq);
+                    break;
                 default:
                     throw new Exception($"Unexpected unary operator {u.Op}");
             }
