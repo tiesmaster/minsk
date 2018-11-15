@@ -183,8 +183,9 @@ namespace Minsk.CodeAnalysis
                 //     return (bool)left && (bool)right;
                 // case BoundBinaryOperatorKind.LogicalOr:
                 //     return (bool)left || (bool)right;
-                // case BoundBinaryOperatorKind.Equals:
-                //     return Equals(left, right);
+                case BoundBinaryOperatorKind.Equals:
+                    _il.Emit(OpCodes.Ceq);
+                    break;
                 // case BoundBinaryOperatorKind.NotEquals:
                 //     return !Equals(left, right);
                 default:
