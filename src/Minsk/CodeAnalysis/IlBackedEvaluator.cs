@@ -24,8 +24,7 @@ namespace Minsk.CodeAnalysis
             _il = _ilBuilder.HostMethodIlProcessor;
 
             EmitStatement(_root);
-            PushResultVariableToStack();
-            _il.Emit(OpCodes.Box, _ilBuilder.TypeSystem.Int32);
+            EmitPushResult();
             _il.Emit(OpCodes.Ret);
 
             var hostMethod = _ilBuilder.Build();
@@ -34,7 +33,7 @@ namespace Minsk.CodeAnalysis
             return result;
         }
 
-        private void PushResultVariableToStack()
+        private void EmitPushResult()
         {
             _il.Emit(OpCodes.Ldloc_0);
         }
@@ -64,7 +63,7 @@ namespace Minsk.CodeAnalysis
             _il.Emit(OpCodes.Stloc, slot);
 
             _il.Emit(OpCodes.Ldloc, slot);
-            PopLastValueToResultVariable();
+            EmitSaveResult(node.Variable.Type);
         }
 
         private void EmitBlockStatement(BoundBlockStatement node)
@@ -76,11 +75,12 @@ namespace Minsk.CodeAnalysis
         private void EmitExpressionStatement(BoundExpressionStatement node)
         {
             EmitExpression(node.Expression);
-            PopLastValueToResultVariable();
+            EmitSaveResult(node.Expression.Type);
         }
 
-        private void PopLastValueToResultVariable()
+        private void EmitSaveResult(Type resultType)
         {
+            _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(resultType));
             _il.Emit(OpCodes.Stloc_0);
         }
 
@@ -115,12 +115,12 @@ namespace Minsk.CodeAnalysis
                 case int i:
                     _il.Emit(OpCodes.Ldc_I4, i);
                     break;
-                // case bool b when b:
-                //     _il.Emit(OpCodes.Ldc_I4_1);
-                //     break;
-                // case bool b when !b:
-                //     _il.Emit(OpCodes.Ldc_I4_0);
-                //     break;
+                case bool b when b:
+                    _il.Emit(OpCodes.Ldc_I4_1);
+                    break;
+                case bool b when !b:
+                    _il.Emit(OpCodes.Ldc_I4_0);
+                    break;
                 default:
                     throw new Exception($"Unexpected type '{n.Type}' for literal value");
             }

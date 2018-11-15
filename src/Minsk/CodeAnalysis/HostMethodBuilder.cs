@@ -13,6 +13,7 @@ namespace Minsk.CodeAnalysis
         private const string _hostMethodName = "HostMethod";
 
         private readonly AssemblyDefinition _hostAssemblyDefinition;
+
         private readonly MethodDefinition _hostMethodDefinition;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
@@ -23,13 +24,12 @@ namespace Minsk.CodeAnalysis
             _hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition(_hostAssemblyName, new Version(1, 0, 0, 0)), _hostAssemblyName, ModuleKind.Dll);
 
-            var hostModule = _hostAssemblyDefinition.MainModule;
-            TypeSystem = hostModule.TypeSystem;
+            HostModule = _hostAssemblyDefinition.MainModule;
 
             var hostTypeDefinition = new TypeDefinition(null, _hostTypeName,
                 TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
 
-            hostModule.Types.Add(hostTypeDefinition);
+            HostModule.Types.Add(hostTypeDefinition);
 
             _hostMethodDefinition = new MethodDefinition(_hostMethodName,
                 MethodAttributes.Public | MethodAttributes.Static, TypeSystem.Object);
@@ -38,11 +38,12 @@ namespace Minsk.CodeAnalysis
 
             HostMethodIlProcessor = _hostMethodDefinition.Body.GetILProcessor();
 
-            AddVariable();
+            AddResultVariable();
         }
 
         public ILProcessor HostMethodIlProcessor { get; }
-        public TypeSystem TypeSystem { get; }
+        public ModuleDefinition HostModule { get; }
+        public TypeSystem TypeSystem => HostModule.TypeSystem;
 
         public HostMethod Build()
         {
@@ -69,6 +70,11 @@ namespace Minsk.CodeAnalysis
             AddVariable();
 
             return freeSlot;
+        }
+
+        private void AddResultVariable()
+        {
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
         }
 
         private void AddVariable()
