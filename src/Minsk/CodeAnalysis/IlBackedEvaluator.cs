@@ -186,8 +186,11 @@ namespace Minsk.CodeAnalysis
                 case BoundBinaryOperatorKind.Equals:
                     _il.Emit(OpCodes.Ceq);
                     break;
-                // case BoundBinaryOperatorKind.NotEquals:
-                //     return !Equals(left, right);
+                case BoundBinaryOperatorKind.NotEquals:
+                    _il.Emit(OpCodes.Ceq);
+                    _il.Emit(OpCodes.Ldc_I4_0);
+                    _il.Emit(OpCodes.Ceq);
+                    break;
                 default:
                     throw new Exception($"Unexpected binary operator {b.Op}");
             }
