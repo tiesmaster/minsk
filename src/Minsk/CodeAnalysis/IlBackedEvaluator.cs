@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Minsk.CodeAnalysis.Binding;
 using Mono.Cecil.Cil;
@@ -9,6 +10,7 @@ namespace Minsk.CodeAnalysis
     internal sealed class IlBackedEvaluator
     {
         private readonly BoundStatement _root;
+        private readonly Dictionary<VariableSymbol, object> _variables;
 
         private HostMethodBuilder _ilBuilder;
         private ILProcessor _il;
@@ -16,21 +18,51 @@ namespace Minsk.CodeAnalysis
         public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
+            // TODO: make this a immutable dict
+            _variables = variables;
         }
+
+        // TODO: ensure variables are created with correct type
+        // TODO: ensure that Values are in same order as the variable slots are declared
 
         public object Evaluate()
         {
             _ilBuilder = new HostMethodBuilder();
             _il = _ilBuilder.HostMethodIlProcessor;
 
+            EmitRestoreVariables();
+
             EmitStatement(_root);
             EmitPushResult();
             _il.Emit(OpCodes.Ret);
 
             var hostMethod = _ilBuilder.Build();
-            var result = hostMethod.Invoke();
+            var result = hostMethod.Invoke(_variables.Values.ToArray());
 
             return result;
+        }
+
+        private void EmitRestoreVariables()
+        {
+            var variableIndex = 0;
+            foreach (var kvp in _variables)
+            {
+                var variable = kvp.Key;
+                var value = kvp.Value;
+
+                var slot = _ilBuilder.CreateVariableSlot(variable);
+
+                // load variables[i] from arguments, and unbox
+                _il.Emit(OpCodes.Ldarg_0);
+                _il.Emit(OpCodes.Ldc_I4, variableIndex);
+                _il.Emit(OpCodes.Ldelem_Ref);
+                _il.Emit(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variable.Type));
+
+                // and store in given slot
+                _il.Emit(OpCodes.Stloc, slot);
+
+                variableIndex++;
+            }
         }
 
         private void EmitPushResult()

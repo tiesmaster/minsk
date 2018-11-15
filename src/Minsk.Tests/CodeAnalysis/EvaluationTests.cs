@@ -83,8 +83,10 @@ namespace Minsk.Tests.CodeAnalysis
             Assert.Equal(expectedValue, result.Value);
         }
 
-        [Fact]
-        public void Evaluator_ContinueWith_CarriesOverVariablesBetweenCompilations()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Evaluator_ContinueWith_CarriesOverVariablesBetweenCompilations(bool useJitting)
         {
             // arrange
             var firstSubmission = SyntaxTree.Parse("var a = 2");
@@ -93,10 +95,13 @@ namespace Minsk.Tests.CodeAnalysis
 
             // act
             var compilation = new Compilation(firstSubmission);
-            var firstResult = compilation.Evaluate(variables);
+            var firstResult = compilation.Evaluate(variables, useJitting);
+
+            // TEMP TEMP TEMP
+            variables[new VariableSymbol("a", false, typeof(int))] = 2;
 
             compilation = compilation.ContinueWith(secondSubmission);
-            var secondResult = compilation.Evaluate(variables);
+            var secondResult = compilation.Evaluate(variables, useJitting);
 
             // assert
             Assert.Equal(2, firstResult.Value);

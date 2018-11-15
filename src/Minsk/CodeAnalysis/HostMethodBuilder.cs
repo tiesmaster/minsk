@@ -34,6 +34,9 @@ namespace Minsk.CodeAnalysis
             _hostMethodDefinition = new MethodDefinition(_hostMethodName,
                 MethodAttributes.Public | MethodAttributes.Static, TypeSystem.Object);
 
+            _hostMethodDefinition.Parameters.Add(
+                new ParameterDefinition("variables", ParameterAttributes.None, HostModule.ImportReference(typeof(object[]))));
+
             hostTypeDefinition.Methods.Add(_hostMethodDefinition);
 
             HostMethodIlProcessor = _hostMethodDefinition.Body.GetILProcessor();
@@ -58,6 +61,18 @@ namespace Minsk.CodeAnalysis
             }
         }
 
+        public int GetVariableSlot(VariableSymbol variable) => _variables[variable];
+
+        public int CreateVariableSlot(VariableSymbol variable)
+        {
+            var freeSlot = _nextFreeVariableSlot++;
+
+            _variables[variable] = freeSlot;
+            AddVariable();
+
+            return freeSlot;
+        }
+
         public int GetOrCreateVariableSlot(VariableSymbol variable)
         {
             if (_variables.TryGetValue(variable, out var existingSlot))
@@ -80,11 +95,6 @@ namespace Minsk.CodeAnalysis
         private void AddVariable()
         {
             _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Int32));
-        }
-
-        public int GetVariableSlot(VariableSymbol variable)
-        {
-            return _variables[variable];
         }
     }
 }
