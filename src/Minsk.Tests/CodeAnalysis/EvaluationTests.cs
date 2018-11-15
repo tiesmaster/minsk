@@ -24,6 +24,8 @@ namespace Minsk.Tests.CodeAnalysis
         [InlineData("true == false", false)]
         [InlineData("false != false", false)]
         [InlineData("true != false", true)]
+        [InlineData("true && true", true)]
+        [InlineData("false || false", false)]
         [InlineData("true", true)]
         [InlineData("false", false)]
         [InlineData("!true", false)]
