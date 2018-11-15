@@ -82,5 +82,25 @@ namespace Minsk.Tests.CodeAnalysis
             Assert.Empty(result.Diagnostics);
             Assert.Equal(expectedValue, result.Value);
         }
+
+        [Fact]
+        public void Evaluator_ContinueWith_CarriesOverVariablesBetweenCompilations()
+        {
+            // arrange
+            var firstSubmission = SyntaxTree.Parse("var a = 2");
+            var secondSubmission = SyntaxTree.Parse("a * a");
+            var variables = new Dictionary<VariableSymbol, object>();
+
+            // act
+            var compilation = new Compilation(firstSubmission);
+            var firstResult = compilation.Evaluate(variables);
+
+            compilation = compilation.ContinueWith(secondSubmission);
+            var secondResult = compilation.Evaluate(variables);
+
+            // assert
+            Assert.Equal(2, firstResult.Value);
+            Assert.Equal(4, secondResult.Value);
+        }
     }
 }
