@@ -14,7 +14,6 @@ namespace Minsk.CodeAnalysis
 
         private readonly AssemblyDefinition _hostAssemblyDefinition;
         private readonly MethodDefinition _hostMethodDefinition;
-        private readonly TypeReference _intType;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
         private int _nextFreeVariableSlot = 1;
@@ -25,16 +24,15 @@ namespace Minsk.CodeAnalysis
                 new AssemblyNameDefinition(_hostAssemblyName, new Version(1, 0, 0, 0)), _hostAssemblyName, ModuleKind.Dll);
 
             var hostModule = _hostAssemblyDefinition.MainModule;
-            _intType = hostModule.ImportReference(typeof(int));
+            TypeSystem = hostModule.TypeSystem;
 
             var hostTypeDefinition = new TypeDefinition(null, _hostTypeName,
-                TypeAttributes.Class | TypeAttributes.Public, hostModule.TypeSystem.Object);
+                TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
 
             hostModule.Types.Add(hostTypeDefinition);
 
-
             _hostMethodDefinition = new MethodDefinition(_hostMethodName,
-                MethodAttributes.Public | MethodAttributes.Static, _intType);
+                MethodAttributes.Public | MethodAttributes.Static, TypeSystem.Object);
 
             hostTypeDefinition.Methods.Add(_hostMethodDefinition);
 
@@ -44,6 +42,7 @@ namespace Minsk.CodeAnalysis
         }
 
         public ILProcessor HostMethodIlProcessor { get; }
+        public TypeSystem TypeSystem { get; }
 
         public HostMethod Build()
         {
@@ -74,7 +73,7 @@ namespace Minsk.CodeAnalysis
 
         private void AddVariable()
         {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(_intType));
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Int32));
         }
 
         public int GetVariableSlot(VariableSymbol variable)

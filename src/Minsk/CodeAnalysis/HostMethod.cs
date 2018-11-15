@@ -15,11 +15,11 @@ namespace Minsk.CodeAnalysis
             _hostMethodName = hostMethodName;
         }
 
-        public int Invoke()
+        public object Invoke()
         {
             var hostType = _hostAssembly.GetType(_hostTypeName);
             var hostMethod = hostType.GetMethod(_hostMethodName, BindingFlags.Static | BindingFlags.Public);
-            var result = (int)hostMethod.Invoke(null, null);
+            var result = hostMethod.Invoke(null, null);
 
             return result;
         }

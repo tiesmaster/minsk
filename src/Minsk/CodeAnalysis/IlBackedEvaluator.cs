@@ -25,6 +25,7 @@ namespace Minsk.CodeAnalysis
 
             EmitStatement(_root);
             PushResultVariableToStack();
+            _il.Emit(OpCodes.Box, _ilBuilder.TypeSystem.Int32);
             _il.Emit(OpCodes.Ret);
 
             var hostMethod = _ilBuilder.Build();
