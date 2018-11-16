@@ -21,8 +21,6 @@ namespace Minsk.CodeAnalysis
             _variables = variables;
         }
 
-        // TODO: ensure that Values are in same order as the variable slots are declared
-
         public object Evaluate()
         {
             _ilBuilder = new HostMethodBuilder();
