@@ -38,10 +38,24 @@ namespace Minsk.CodeAnalysis
 
             var hostMethod = _ilBuilder.Build();
 
-            var variableCount = Math.Min(_variables.Count, _ilBuilder.Variables.Count);
+            var variableCount = _ilBuilder.Variables.Count;
 
             var variableValues = new object[variableCount];
-            Array.Copy(_variables.Values.ToArray(), variableValues, _variables.Count);
+            foreach (var kvp in _ilBuilder.Variables)
+            {
+                var variable = kvp.Key;
+                var slot = kvp.Value;
+                var variableIndex = slot - 1;
+
+                if (_variables.TryGetValue(variable, out var value))
+                {
+                    variableValues[variableIndex] = value;
+                }
+                else
+                {
+                    variableValues[variableIndex] = Activator.CreateInstance(variable.Type);
+                }
+            }
 
             var result = hostMethod.Invoke(variableValues);
 
@@ -50,8 +64,9 @@ namespace Minsk.CodeAnalysis
             {
                 var variable = kvp.Key;
                 var slot = kvp.Value;
+                var variableIndex = slot - 1;
 
-                _variables[variable] = variableValues[slot];
+                _variables[variable] = variableValues[variableIndex];
             }
 
             return result;
@@ -59,21 +74,31 @@ namespace Minsk.CodeAnalysis
 
         private void EmitRestoreVariables()
         {
-            // TODO: insert at the beginning
             var variableIndex = 0;
+            var instructionsToInsert = new List<Instruction>();
             foreach (var kvp in _ilBuilder.Variables)
             {
                 var variable = kvp.Key;
                 var slot = kvp.Value;
 
                 // load variables[i] from arguments, and unbox
-                _il.Emit(OpCodes.Ldarg_0);
-                _il.Emit(OpCodes.Ldc_I4, variableIndex);
-                _il.Emit(OpCodes.Ldelem_Ref);
-                _il.Emit(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variable.Type));
+                instructionsToInsert.Add(_il.Create(OpCodes.Ldarg_0));
+                instructionsToInsert.Add(_il.Create(OpCodes.Ldc_I4, variableIndex));
+                instructionsToInsert.Add(_il.Create(OpCodes.Ldelem_Ref));
+                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variable.Type)));
 
                 // and store in given slot
-                _il.Emit(OpCodes.Stloc, slot);
+                instructionsToInsert.Add(_il.Create(OpCodes.Stloc, slot));
+
+                // add all instructions to insert at position 0
+                instructionsToInsert.Reverse();
+                foreach (var instruction in instructionsToInsert)
+                {
+                    var firstInstruction = _il.Body.Instructions.First();
+                    _il.InsertBefore(firstInstruction, instruction);
+
+                }
+                instructionsToInsert.Clear();
 
                 variableIndex++;
             }
