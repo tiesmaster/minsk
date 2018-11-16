@@ -65,18 +65,6 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        public int GetVariableSlot(VariableSymbol variable) => _variables[variable];
-
-        public int CreateVariableSlot(VariableSymbol variable)
-        {
-            var freeSlot = _nextFreeVariableSlot++;
-
-            _variables[variable] = freeSlot;
-            AddVariable();
-
-            return freeSlot;
-        }
-
         public int GetOrCreateVariableSlot(VariableSymbol variable)
         {
             if (_variables.TryGetValue(variable, out var existingSlot))
