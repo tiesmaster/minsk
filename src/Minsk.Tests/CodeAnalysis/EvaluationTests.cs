@@ -97,9 +97,6 @@ namespace Minsk.Tests.CodeAnalysis
             var compilation = new Compilation(firstSubmission);
             var firstResult = compilation.Evaluate(variables, useJitting);
 
-            // TEMP TEMP TEMP
-            variables[new VariableSymbol("a", false, typeof(int))] = 2;
-
             compilation = compilation.ContinueWith(secondSubmission);
             var secondResult = compilation.Evaluate(variables, useJitting);
 

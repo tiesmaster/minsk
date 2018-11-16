@@ -48,6 +48,8 @@ namespace Minsk.CodeAnalysis
         public ModuleDefinition HostModule { get; }
         public TypeSystem TypeSystem => HostModule.TypeSystem;
 
+        public Dictionary<VariableSymbol, int> Variables => _variables;
+
         public HostMethod Build()
         {
             using (var ms = new MemoryStream())

@@ -31,13 +31,28 @@ namespace Minsk.CodeAnalysis
             _il = _ilBuilder.HostMethodIlProcessor;
 
             EmitRestoreVariables();
-
             EmitStatement(_root);
             EmitPushResult();
+            EmitSaveVariables();
             _il.Emit(OpCodes.Ret);
 
             var hostMethod = _ilBuilder.Build();
-            var result = hostMethod.Invoke(_variables.Values.ToArray());
+
+            var variableCount = Math.Min(_variables.Count, _ilBuilder.Variables.Count);
+
+            var variableValues = new object[variableCount];
+            Array.Copy(_variables.Values.ToArray(), variableValues, _variables.Count);
+
+            var result = hostMethod.Invoke(variableValues);
+
+            // copy them back
+            foreach (var kvp in _ilBuilder.Variables)
+            {
+                var variable = kvp.Key;
+                var slot = kvp.Value;
+
+                _variables[variable] = variableValues[slot];
+            }
 
             return result;
         }
@@ -60,6 +75,27 @@ namespace Minsk.CodeAnalysis
 
                 // and store in given slot
                 _il.Emit(OpCodes.Stloc, slot);
+
+                variableIndex++;
+            }
+        }
+
+        private void EmitSaveVariables()
+        {
+            var variableIndex = 0;
+            foreach (var kvp in _ilBuilder.Variables)
+            {
+                var variable = kvp.Key;
+                var slot = kvp.Value;
+
+                _il.Emit(OpCodes.Ldarg_0);
+                _il.Emit(OpCodes.Ldc_I4, variableIndex);
+
+                _il.Emit(OpCodes.Ldloc, slot);
+
+                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variable.Type));
+
+                _il.Emit(OpCodes.Stelem_Ref);
 
                 variableIndex++;
             }
