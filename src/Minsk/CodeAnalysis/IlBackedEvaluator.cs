@@ -23,45 +23,30 @@ namespace Minsk.CodeAnalysis
 
         public object Evaluate()
         {
-            _ilBuilder = new HostMethodBuilder();
-            _il = _ilBuilder.HostMethodIlProcessor;
+            Initialize();
 
             EmitStatement(_root);
             EmitPushResult();
             EmitRestoreVariables();
             EmitSaveVariables();
-            _il.Emit(OpCodes.Ret);
+            EmitEndOfMethod();
 
             var hostMethod = _ilBuilder.Build();
 
-            var variableValues = CreateVariablesParameter();
-            var result = hostMethod.Invoke(variableValues);
-
-            CopyVariablesBackToDictionary(variableValues);
+            object result = InvokeHostMethod(hostMethod);
 
             return result;
         }
 
-        private object[] CreateVariablesParameter()
+        private void Initialize()
         {
-            return (from kvp in _ilBuilder.Variables
-                    orderby kvp.Value
-                    let variable = kvp.Key
-                    select _variables.TryGetValue(variable, out var value)
-                        ? value
-                        : Activator.CreateInstance(variable.Type)
-            ).ToArray();
+            _ilBuilder = new HostMethodBuilder();
+            _il = _ilBuilder.HostMethodIlProcessor;
         }
 
-        private void CopyVariablesBackToDictionary(object[] variableValues)
+        private void EmitPushResult()
         {
-            foreach (var kvp in _ilBuilder.Variables)
-            {
-                var variable = kvp.Key;
-                var variableIndex = kvp.Value - 1;
-
-                _variables[variable] = variableValues[variableIndex];
-            }
+            _il.Emit(OpCodes.Ldloc_0);
         }
 
         private void EmitRestoreVariables()
@@ -119,9 +104,40 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        private void EmitPushResult()
+        private void EmitEndOfMethod()
         {
-            _il.Emit(OpCodes.Ldloc_0);
+            _il.Emit(OpCodes.Ret);
+        }
+
+        private object InvokeHostMethod(HostMethod hostMethod)
+        {
+            var variableValues = CreateVariablesParameter();
+            var result = hostMethod.Invoke(variableValues);
+            CopyVariablesBackToDictionary(variableValues);
+
+            return result;
+        }
+
+        private object[] CreateVariablesParameter()
+        {
+            return (from kvp in _ilBuilder.Variables
+                    orderby kvp.Value
+                    let variable = kvp.Key
+                    select _variables.TryGetValue(variable, out var value)
+                        ? value
+                        : Activator.CreateInstance(variable.Type)
+            ).ToArray();
+        }
+
+        private void CopyVariablesBackToDictionary(object[] variableValues)
+        {
+            foreach (var kvp in _ilBuilder.Variables)
+            {
+                var variable = kvp.Key;
+                var variableIndex = kvp.Value - 1;
+
+                _variables[variable] = variableValues[variableIndex];
+            }
         }
 
         private void EmitStatement(BoundStatement node)
