@@ -30,9 +30,9 @@ namespace Minsk.CodeAnalysis
             _ilBuilder = new HostMethodBuilder();
             _il = _ilBuilder.HostMethodIlProcessor;
 
-            EmitRestoreVariables();
             EmitStatement(_root);
             EmitPushResult();
+            EmitRestoreVariables();
             EmitSaveVariables();
             _il.Emit(OpCodes.Ret);
 
@@ -59,13 +59,12 @@ namespace Minsk.CodeAnalysis
 
         private void EmitRestoreVariables()
         {
+            // TODO: insert at the beginning
             var variableIndex = 0;
-            foreach (var kvp in _variables)
+            foreach (var kvp in _ilBuilder.Variables)
             {
                 var variable = kvp.Key;
-                var value = kvp.Value;
-
-                var slot = _ilBuilder.CreateVariableSlot(variable);
+                var slot = kvp.Value;
 
                 // load variables[i] from arguments, and unbox
                 _il.Emit(OpCodes.Ldarg_0);
@@ -88,11 +87,13 @@ namespace Minsk.CodeAnalysis
                 var variable = kvp.Key;
                 var slot = kvp.Value;
 
+                // load the in|out variable array
                 _il.Emit(OpCodes.Ldarg_0);
+                // index into the variable array
                 _il.Emit(OpCodes.Ldc_I4, variableIndex);
 
+                // load the variable from the given slot, and box it
                 _il.Emit(OpCodes.Ldloc, slot);
-
                 _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variable.Type));
 
                 _il.Emit(OpCodes.Stelem_Ref);
@@ -196,17 +197,17 @@ namespace Minsk.CodeAnalysis
 
         private void EmitVariableExpression(BoundVariableExpression v)
         {
-            var slot = _ilBuilder.GetVariableSlot(v.Variable);
+            var slot = _ilBuilder.GetOrCreateVariableSlot(v.Variable);
             _il.Emit(OpCodes.Ldloc, slot);
         }
 
         private void EmitAssignmentExpression(BoundAssignmentExpression a)
         {
             EmitExpression(a.Expression);
-
-            var slot = _ilBuilder.GetVariableSlot(a.Variable);
-
+            var slot = _ilBuilder.GetOrCreateVariableSlot(a.Variable);
             _il.Emit(OpCodes.Stloc, slot);
+
+            // push result of the expression back on the stack, since this expression also produces a value downstream
             _il.Emit(OpCodes.Ldloc, slot);
         }
 

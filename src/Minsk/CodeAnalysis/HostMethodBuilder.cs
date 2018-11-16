@@ -17,6 +17,8 @@ namespace Minsk.CodeAnalysis
         private readonly MethodDefinition _hostMethodDefinition;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
+
+        // first variable slot is the result variable
         private int _nextFreeVariableSlot = 1;
 
         public HostMethodBuilder()
