@@ -46,18 +46,13 @@ namespace Minsk.CodeAnalysis
 
         private object[] CreateVariablesParameter()
         {
-            var variableValues = new object[_ilBuilder.Variables.Count];
-            foreach (var kvp in _ilBuilder.Variables)
-            {
-                var variable = kvp.Key;
-                var variableIndex = kvp.Value - 1;
-
-                variableValues[variableIndex] = _variables.TryGetValue(variable, out var value)
-                    ? value
-                    : Activator.CreateInstance(variable.Type);
-            }
-
-            return variableValues;
+            return (from kvp in _ilBuilder.Variables
+                    orderby kvp.Value
+                    let variable = kvp.Key
+                    select _variables.TryGetValue(variable, out var value)
+                        ? value
+                        : Activator.CreateInstance(variable.Type)
+            ).ToArray();
         }
 
         private void CopyVariablesBackToDictionary(object[] variableValues)
