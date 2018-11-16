@@ -36,38 +36,39 @@ namespace Minsk.CodeAnalysis
 
             var hostMethod = _ilBuilder.Build();
 
-            var variableCount = _ilBuilder.Variables.Count;
-
-            var variableValues = new object[variableCount];
-            foreach (var kvp in _ilBuilder.Variables)
-            {
-                var variable = kvp.Key;
-                var slot = kvp.Value;
-                var variableIndex = slot - 1;
-
-                if (_variables.TryGetValue(variable, out var value))
-                {
-                    variableValues[variableIndex] = value;
-                }
-                else
-                {
-                    variableValues[variableIndex] = Activator.CreateInstance(variable.Type);
-                }
-            }
-
+            var variableValues = CreateVariablesParameter();
             var result = hostMethod.Invoke(variableValues);
 
-            // copy them back
+            CopyVariablesBackToDictionary(variableValues);
+
+            return result;
+        }
+
+        private object[] CreateVariablesParameter()
+        {
+            var variableValues = new object[_ilBuilder.Variables.Count];
             foreach (var kvp in _ilBuilder.Variables)
             {
                 var variable = kvp.Key;
-                var slot = kvp.Value;
-                var variableIndex = slot - 1;
+                var variableIndex = kvp.Value - 1;
+
+                variableValues[variableIndex] = _variables.TryGetValue(variable, out var value)
+                    ? value
+                    : Activator.CreateInstance(variable.Type);
+            }
+
+            return variableValues;
+        }
+
+        private void CopyVariablesBackToDictionary(object[] variableValues)
+        {
+            foreach (var kvp in _ilBuilder.Variables)
+            {
+                var variable = kvp.Key;
+                var variableIndex = kvp.Value - 1;
 
                 _variables[variable] = variableValues[variableIndex];
             }
-
-            return result;
         }
 
         private void EmitRestoreVariables()
