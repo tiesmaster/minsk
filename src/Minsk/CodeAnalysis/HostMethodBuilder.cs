@@ -74,7 +74,7 @@ namespace Minsk.CodeAnalysis
             var freeSlot = _nextFreeVariableSlot++;
 
             _variables[variable] = freeSlot;
-            AddVariable();
+            AddVariable(variable.Type);
 
             return freeSlot;
         }
@@ -84,9 +84,9 @@ namespace Minsk.CodeAnalysis
             _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
         }
 
-        private void AddVariable()
+        private void AddVariable(Type variableType)
         {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Int32));
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(HostModule.ImportReference(variableType)));
         }
     }
 }
