@@ -18,7 +18,6 @@ namespace Minsk.CodeAnalysis
         public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
-            // TODO: make this a immutable dict
             _variables = variables;
         }
 
