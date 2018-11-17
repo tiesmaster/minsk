@@ -40,8 +40,8 @@ namespace Minsk.CodeAnalysis
         {
             EmitStatement(_root);
 
-            EmitRestoreVariablesFromArgument();
-            InsertEmitSaveVariablesToStartOfMethod();
+            InsertEmitRestoreVariablesFromArgumentToStartOfMethod();
+            EmitSaveVariables();
 
             EmitPushResult();
             EmitEndOfMethod();
@@ -52,8 +52,9 @@ namespace Minsk.CodeAnalysis
             _il.Emit(OpCodes.Ldloc_0);
         }
 
-        private void EmitRestoreVariablesFromArgument()
+        private void InsertEmitRestoreVariablesFromArgumentToStartOfMethod()
         {
+            // void InsertInstructions
             var instructionsToInsert = new List<Instruction>();
             foreach (var variableDef in _ilBuilder.Variables)
             {
@@ -78,7 +79,7 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        private void InsertEmitSaveVariablesToStartOfMethod()
+        private void EmitSaveVariables()
         {
             foreach (var variableDef in _ilBuilder.Variables)
             {
