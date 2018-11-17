@@ -24,16 +24,8 @@ namespace Minsk.CodeAnalysis
         public object Evaluate()
         {
             Initialize();
-
-            EmitStatement(_root);
-            EmitPushResult();
-            EmitRestoreVariables();
-            EmitSaveVariables();
-            EmitEndOfMethod();
-
-            var hostMethod = _ilBuilder.Build();
-
-            object result = InvokeHostMethod(hostMethod);
+            EmitHostMethod();
+            var result = InvokeHostMethod(_ilBuilder.Build());
 
             return result;
         }
@@ -44,12 +36,23 @@ namespace Minsk.CodeAnalysis
             _il = _ilBuilder.HostMethodIlProcessor;
         }
 
+        private void EmitHostMethod()
+        {
+            EmitStatement(_root);
+
+            EmitRestoreVariablesFromArgument();
+            InsertEmitSaveVariablesToStartOfMethod();
+
+            EmitPushResult();
+            EmitEndOfMethod();
+        }
+
         private void EmitPushResult()
         {
             _il.Emit(OpCodes.Ldloc_0);
         }
 
-        private void EmitRestoreVariables()
+        private void EmitRestoreVariablesFromArgument()
         {
             var variableIndex = 0;
             var instructionsToInsert = new List<Instruction>();
@@ -81,7 +84,7 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        private void EmitSaveVariables()
+        private void InsertEmitSaveVariablesToStartOfMethod()
         {
             var variableIndex = 0;
             foreach (var kvp in _ilBuilder.Variables)
