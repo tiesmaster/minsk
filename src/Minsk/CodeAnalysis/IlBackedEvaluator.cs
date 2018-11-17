@@ -54,7 +54,15 @@ namespace Minsk.CodeAnalysis
 
         private void InsertEmitRestoreVariablesFromArgumentToStartOfMethod()
         {
-            // void InsertInstructions
+            void InsertInstructionsAtBeginningOfMethod(ILProcessor il, IEnumerable<Instruction> instructions)
+            {
+                foreach (var instruction in instructions.Reverse())
+                {
+                    var firstInstruction = il.Body.Instructions.First();
+                    il.InsertBefore(firstInstruction, instruction);
+                }
+            }
+
             var instructionsToInsert = new List<Instruction>();
             foreach (var variableDef in _ilBuilder.Variables)
             {
@@ -67,14 +75,7 @@ namespace Minsk.CodeAnalysis
                 // and store in given slot
                 instructionsToInsert.Add(_il.Create(OpCodes.Stloc, variableDef.Slot));
 
-                // add all instructions to insert at position 0
-                instructionsToInsert.Reverse();
-                foreach (var instruction in instructionsToInsert)
-                {
-                    var firstInstruction = _il.Body.Instructions.First();
-                    _il.InsertBefore(firstInstruction, instruction);
-
-                }
+                InsertInstructionsAtBeginningOfMethod(_il, instructionsToInsert);
                 instructionsToInsert.Clear();
             }
         }
@@ -83,7 +84,6 @@ namespace Minsk.CodeAnalysis
         {
             foreach (var variableDef in _ilBuilder.Variables)
             {
-
                 // load the in|out variable array
                 _il.Emit(OpCodes.Ldarg_0);
                 // index into the variable array
