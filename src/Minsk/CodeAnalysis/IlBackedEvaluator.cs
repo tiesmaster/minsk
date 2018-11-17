@@ -86,24 +86,19 @@ namespace Minsk.CodeAnalysis
 
         private void InsertEmitSaveVariablesToStartOfMethod()
         {
-            var variableIndex = 0;
-            foreach (var kvp in _ilBuilder.Variables)
+            foreach (var variableDefinition in _ilBuilder.Variables.Select((kvp, i) => new { Variable = kvp.Key, Slot = kvp.Value, VariableIndex = i }))
             {
-                var variable = kvp.Key;
-                var slot = kvp.Value;
 
                 // load the in|out variable array
                 _il.Emit(OpCodes.Ldarg_0);
                 // index into the variable array
-                _il.Emit(OpCodes.Ldc_I4, variableIndex);
+                _il.Emit(OpCodes.Ldc_I4, variableDefinition.VariableIndex);
 
                 // load the variable from the given slot, and box it
-                _il.Emit(OpCodes.Ldloc, slot);
-                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variable.Type));
+                _il.Emit(OpCodes.Ldloc, variableDefinition.Slot);
+                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variableDefinition.Variable.Type));
 
                 _il.Emit(OpCodes.Stelem_Ref);
-
-                variableIndex++;
             }
         }
 
