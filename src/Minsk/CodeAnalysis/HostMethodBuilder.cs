@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
@@ -6,6 +7,19 @@ using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
 {
+    internal class VariableDef
+    {
+        public VariableDef(VariableSymbol variable, int slot)
+        {
+            Variable = variable;
+            Slot = slot;
+        }
+
+        public VariableSymbol Variable { get; }
+        public int Slot { get; }
+        public int VariableIndex => Slot - 1;
+    }
+
     internal class HostMethodBuilder
     {
         private const string _hostAssemblyName = "HostAssembly";
@@ -50,7 +64,7 @@ namespace Minsk.CodeAnalysis
         public ModuleDefinition HostModule { get; }
         public TypeSystem TypeSystem => HostModule.TypeSystem;
 
-        public Dictionary<VariableSymbol, int> Variables => _variables;
+        public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
 
         public HostMethod Build()
         {

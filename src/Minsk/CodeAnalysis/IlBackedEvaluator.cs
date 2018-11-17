@@ -54,21 +54,17 @@ namespace Minsk.CodeAnalysis
 
         private void EmitRestoreVariablesFromArgument()
         {
-            var variableIndex = 0;
             var instructionsToInsert = new List<Instruction>();
-            foreach (var kvp in _ilBuilder.Variables)
+            foreach (var variableDef in _ilBuilder.Variables)
             {
-                var variable = kvp.Key;
-                var slot = kvp.Value;
-
                 // load variables[i] from arguments, and unbox
                 instructionsToInsert.Add(_il.Create(OpCodes.Ldarg_0));
-                instructionsToInsert.Add(_il.Create(OpCodes.Ldc_I4, variableIndex));
+                instructionsToInsert.Add(_il.Create(OpCodes.Ldc_I4, variableDef.VariableIndex));
                 instructionsToInsert.Add(_il.Create(OpCodes.Ldelem_Ref));
-                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variable.Type)));
+                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type)));
 
                 // and store in given slot
-                instructionsToInsert.Add(_il.Create(OpCodes.Stloc, slot));
+                instructionsToInsert.Add(_il.Create(OpCodes.Stloc, variableDef.Slot));
 
                 // add all instructions to insert at position 0
                 instructionsToInsert.Reverse();
@@ -79,24 +75,22 @@ namespace Minsk.CodeAnalysis
 
                 }
                 instructionsToInsert.Clear();
-
-                variableIndex++;
             }
         }
 
         private void InsertEmitSaveVariablesToStartOfMethod()
         {
-            foreach (var variableDefinition in _ilBuilder.Variables.Select((kvp, i) => new { Variable = kvp.Key, Slot = kvp.Value, VariableIndex = i }))
+            foreach (var variableDef in _ilBuilder.Variables)
             {
 
                 // load the in|out variable array
                 _il.Emit(OpCodes.Ldarg_0);
                 // index into the variable array
-                _il.Emit(OpCodes.Ldc_I4, variableDefinition.VariableIndex);
+                _il.Emit(OpCodes.Ldc_I4, variableDef.VariableIndex);
 
                 // load the variable from the given slot, and box it
-                _il.Emit(OpCodes.Ldloc, variableDefinition.Slot);
-                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variableDefinition.Variable.Type));
+                _il.Emit(OpCodes.Ldloc, variableDef.Slot);
+                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type));
 
                 _il.Emit(OpCodes.Stelem_Ref);
             }
@@ -118,9 +112,9 @@ namespace Minsk.CodeAnalysis
 
         private object[] CreateVariablesParameter()
         {
-            return (from kvp in _ilBuilder.Variables
-                    orderby kvp.Value
-                    let variable = kvp.Key
+            return (from variableDef in _ilBuilder.Variables
+                    orderby variableDef.Slot
+                    let variable = variableDef.Variable
                     select _variables.TryGetValue(variable, out var value)
                         ? value
                         : Activator.CreateInstance(variable.Type)
@@ -129,12 +123,9 @@ namespace Minsk.CodeAnalysis
 
         private void CopyVariablesBackToDictionary(object[] variableValues)
         {
-            foreach (var kvp in _ilBuilder.Variables)
+            foreach (var variableDef in _ilBuilder.Variables)
             {
-                var variable = kvp.Key;
-                var variableIndex = kvp.Value - 1;
-
-                _variables[variable] = variableValues[variableIndex];
+                _variables[variableDef.Variable] = variableValues[variableDef.VariableIndex];
             }
         }
 
