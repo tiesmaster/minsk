@@ -8,76 +8,37 @@ namespace Minsk.Tests.CodeAnalysis
     public class EvaluationTests
     {
         [Theory]
-        [InlineData("1", 1)]
-        [InlineData("+1", 1)]
-        [InlineData("-1", -1)]
-        [InlineData("14 + 12", 26)]
-        [InlineData("12 - 3", 9)]
-        [InlineData("4 * 2", 8)]
-        [InlineData("9 / 3", 3)]
-        [InlineData("(10)", 10)]
-        [InlineData("12 == 3", false)]
-        [InlineData("3 == 3", true)]
-        [InlineData("12 != 3", true)]
-        [InlineData("3 != 3", false)]
-        [InlineData("false == false", true)]
-        [InlineData("true == false", false)]
-        [InlineData("false != false", false)]
-        [InlineData("true != false", true)]
-        [InlineData("true && true", true)]
-        [InlineData("false || false", false)]
-        [InlineData("true", true)]
-        [InlineData("false", false)]
-        [InlineData("!true", false)]
-        [InlineData("!false", true)]
-        [InlineData("{ var a = 0 (a = 10) * a }", 100)]
-
-        [InlineData("var a = 10", 10)]
-        [InlineData("{ var a = 10 (a * a) }", 100)]
-        public void Evaluator_Computes_CorrectValues(string text, object expectedValue)
+        [FeatureToggledInlineData("1", 1)]
+        [FeatureToggledInlineData("+1", 1)]
+        [FeatureToggledInlineData("-1", -1)]
+        [FeatureToggledInlineData("14 + 12", 26)]
+        [FeatureToggledInlineData("12 - 3", 9)]
+        [FeatureToggledInlineData("4 * 2", 8)]
+        [FeatureToggledInlineData("9 / 3", 3)]
+        [FeatureToggledInlineData("(10)", 10)]
+        [FeatureToggledInlineData("12 == 3", false)]
+        [FeatureToggledInlineData("3 == 3", true)]
+        [FeatureToggledInlineData("12 != 3", true)]
+        [FeatureToggledInlineData("3 != 3", false)]
+        [FeatureToggledInlineData("false == false", true)]
+        [FeatureToggledInlineData("true == false", false)]
+        [FeatureToggledInlineData("false != false", false)]
+        [FeatureToggledInlineData("true != false", true)]
+        [FeatureToggledInlineData("true && true", true)]
+        [FeatureToggledInlineData("false || false", false)]
+        [FeatureToggledInlineData("true", true)]
+        [FeatureToggledInlineData("false", false)]
+        [FeatureToggledInlineData("!true", false)]
+        [FeatureToggledInlineData("!false", true)]
+        [FeatureToggledInlineData("{ var a = 0 (a = 10) * a }", 100)]
+        [FeatureToggledInlineData("var a = 10", 10)]
+        [FeatureToggledInlineData("{ var a = 10 (a * a) }", 100)]
+        public void JitEvaluator_Computes_CorrectValues(string text, object expectedValue, bool useJitting)
         {
             var syntaxTree = SyntaxTree.Parse(text);
             var compilation = new Compilation(syntaxTree);
             var variables = new Dictionary<VariableSymbol, object>();
-            var result = compilation.Evaluate(variables);
-
-            Assert.Empty(result.Diagnostics);
-            Assert.Equal(expectedValue, result.Value);
-        }
-
-        [Theory]
-        [InlineData("1", 1)]
-        [InlineData("+1", 1)]
-        [InlineData("-1", -1)]
-        [InlineData("14 + 12", 26)]
-        [InlineData("12 - 3", 9)]
-        [InlineData("4 * 2", 8)]
-        [InlineData("9 / 3", 3)]
-        [InlineData("(10)", 10)]
-        [InlineData("12 == 3", false)]
-        [InlineData("3 == 3", true)]
-        [InlineData("12 != 3", true)]
-        [InlineData("3 != 3", false)]
-        [InlineData("false == false", true)]
-        [InlineData("true == false", false)]
-        [InlineData("false != false", false)]
-        [InlineData("true != false", true)]
-        [InlineData("true && true", true)]
-        [InlineData("false || false", false)]
-        [InlineData("true", true)]
-        [InlineData("false", false)]
-        [InlineData("!true", false)]
-        [InlineData("!false", true)]
-        [InlineData("{ var a = 0 (a = 10) * a }", 100)]
-
-        [InlineData("var a = 10", 10)]
-        [InlineData("{ var a = 10 (a * a) }", 100)]
-        public void JitEvaluator_Computes_CorrectValues(string text, object expectedValue)
-        {
-            var syntaxTree = SyntaxTree.Parse(text);
-            var compilation = new Compilation(syntaxTree);
-            var variables = new Dictionary<VariableSymbol, object>();
-            var result = compilation.Evaluate(variables, useJitting: true);
+            var result = compilation.Evaluate(variables, useJitting);
 
             Assert.Empty(result.Diagnostics);
             Assert.Equal(expectedValue, result.Value);
