@@ -214,11 +214,12 @@ namespace Minsk.CodeAnalysis
             EmitExpression(node.LowerBound);
             _il.Emit(OpCodes.Stloc, slot);
 
-            // condition: LessOrEqual
-            var firstInstructionOfCondition = _il.Create(OpCodes.Ldloc, slot);
-            _il.Append(firstInstructionOfCondition);
             EmitExpression(node.UpperBound);
-            _il.Emit(OpCodes.Cgt);
+
+            var firstInstructionOfCondition = _il.Create(OpCodes.Dup);
+            _il.Append(firstInstructionOfCondition);
+            _il.Emit(OpCodes.Ldloc, slot);
+            _il.Emit(OpCodes.Clt);
             _il.Emit(OpCodes.Ldc_I4_0);
             var lastInstructionOfCondition = _il.Create(OpCodes.Ceq);
             _il.Append(lastInstructionOfCondition);
@@ -238,6 +239,8 @@ namespace Minsk.CodeAnalysis
             _il.Append(lastInstructionOfBody);
 
             _il.InsertAfter(lastInstructionOfCondition, _il.Create(OpCodes.Brfalse_S, lastInstructionOfBody));
+
+            _il.Emit(OpCodes.Pop);
         }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
