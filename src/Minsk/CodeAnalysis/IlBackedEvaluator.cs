@@ -146,9 +146,9 @@ namespace Minsk.CodeAnalysis
                 case BoundNodeKind.WhileStatement:
                     EmitWhileStatement((BoundWhileStatement)node);
                     break;
-                // case BoundNodeKind.ForStatement:
-                //     EmitForStatement((BoundForStatement)node);
-                //     break;
+                case BoundNodeKind.ForStatement:
+                    EmitForStatement((BoundForStatement)node);
+                    break;
                 case BoundNodeKind.ExpressionStatement:
                     EmitExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -206,6 +206,38 @@ namespace Minsk.CodeAnalysis
             _il.Append(lastInstructionOfBodyStatement);
 
             _il.InsertAfter(lastInstructionOfCondition, _il.Create(OpCodes.Brfalse_S, lastInstructionOfBodyStatement));
+        }
+
+        private void EmitForStatement(BoundForStatement node)
+        {
+            var slot = _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            EmitExpression(node.LowerBound);
+            _il.Emit(OpCodes.Stloc, slot);
+
+            // condition: LessOrEqual
+            var firstInstructionOfCondition = _il.Create(OpCodes.Ldloc, slot);
+            _il.Append(firstInstructionOfCondition);
+            EmitExpression(node.UpperBound);
+            _il.Emit(OpCodes.Cgt);
+            _il.Emit(OpCodes.Ldc_I4_0);
+            var lastInstructionOfCondition = _il.Create(OpCodes.Ceq);
+            _il.Append(lastInstructionOfCondition);
+
+            EmitStatement(node.Body);
+
+            // i++
+            _il.Emit(OpCodes.Ldloc, slot);
+            _il.Emit(OpCodes.Ldc_I4_1);
+            _il.Emit(OpCodes.Add);
+            _il.Emit(OpCodes.Stloc, slot);
+
+            // jump back to condition
+            _il.Emit(OpCodes.Br_S, firstInstructionOfCondition);
+
+            var lastInstructionOfBody = _il.Create(OpCodes.Nop);
+            _il.Append(lastInstructionOfBody);
+
+            _il.InsertAfter(lastInstructionOfCondition, _il.Create(OpCodes.Brfalse_S, lastInstructionOfBody));
         }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
