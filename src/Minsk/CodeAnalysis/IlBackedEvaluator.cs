@@ -288,7 +288,7 @@ namespace Minsk.CodeAnalysis
                     _il.Emit(OpCodes.Ceq);
                     break;
                 default:
-                    throw new Exception($"Unexpected binary operator {b.Op}");
+                    throw new Exception($"Unexpected binary operator {b.Op}: {b.Op.Kind}");
             }
         }
     }
