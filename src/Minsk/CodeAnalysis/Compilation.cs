@@ -33,7 +33,7 @@ namespace Minsk.CodeAnalysis
                 {
                     var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
-                }    
+                }
 
                 return _globalScope;
             }
@@ -44,15 +44,24 @@ namespace Minsk.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, bool useJitting = false)
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var evaluator = new Evaluator(GlobalScope.Statement, variables);
-            var value = evaluator.Evaluate();
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            if (useJitting)
+            {
+                var evaluator = new IlBackedEvaluator(GlobalScope.Statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
+            else
+            {
+                var evaluator = new Evaluator(GlobalScope.Statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
         }
     }
 }
