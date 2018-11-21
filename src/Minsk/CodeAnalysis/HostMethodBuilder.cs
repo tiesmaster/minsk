@@ -29,8 +29,11 @@ namespace Minsk.CodeAnalysis
         private readonly AssemblyDefinition _hostAssemblyDefinition;
 
         private readonly MethodDefinition _hostMethodDefinition;
+        private readonly Instruction _dummyJumpInstruction;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
+        private readonly List<(Instruction, LabelSymbol)> _jumpPatchList = new List<(Instruction, LabelSymbol)>();
+        private readonly Dictionary<LabelSymbol, Instruction> _labelMapping = new Dictionary<LabelSymbol, Instruction>();
 
         // first variable slot is the result variable
         private int _nextFreeVariableSlot = 1;
@@ -57,6 +60,7 @@ namespace Minsk.CodeAnalysis
 
             HostMethodIlProcessor = _hostMethodDefinition.Body.GetILProcessor();
 
+            _dummyJumpInstruction = HostMethodIlProcessor.Create(OpCodes.Nop);
             AddResultVariable();
         }
 
@@ -67,6 +71,21 @@ namespace Minsk.CodeAnalysis
         public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
 
         public HostMethod Build()
+        {
+            PatchupJumps();
+            return CreateHostMethod();
+        }
+
+        private void PatchupJumps()
+        {
+            foreach (var (jump, label) in _jumpPatchList)
+            {
+                var targetInstruction = _labelMapping[label].Next;
+                jump.Operand = targetInstruction;
+            }
+        }
+
+        private HostMethod CreateHostMethod()
         {
             using (var ms = new MemoryStream())
             {
@@ -101,6 +120,19 @@ namespace Minsk.CodeAnalysis
         private void AddVariable(Type variableType)
         {
             _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(HostModule.ImportReference(variableType)));
+        }
+
+        public void MarkLabel(LabelSymbol label)
+        {
+            _labelMapping[label] = HostMethodIlProcessor.Body.Instructions.LastOrDefault();
+        }
+
+        public void AddJump(OpCode jumpOpcode, LabelSymbol jumpLabel)
+        {
+            var jumpInstruction = HostMethodIlProcessor.Create(jumpOpcode, _dummyJumpInstruction);
+            _jumpPatchList.Add((jumpInstruction, jumpLabel));
+
+            HostMethodIlProcessor.Append(jumpInstruction);
         }
     }
 }
