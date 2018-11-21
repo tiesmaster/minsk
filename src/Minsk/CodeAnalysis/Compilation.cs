@@ -37,7 +37,7 @@ namespace Minsk.CodeAnalysis
                 {
                     var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
-                }    
+                }
 
                 return _globalScope;
             }
@@ -48,16 +48,26 @@ namespace Minsk.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, bool useJitting = false)
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var statement = GetStatement();
-            var evaluator = new Evaluator(statement, variables);
-            var value = evaluator.Evaluate();
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            if (useJitting)
+            {
+                var statement = GetStatement();
+                var evaluator = new IlBackedEvaluator(statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
+            else
+            {
+                var statement = GetStatement();
+                var evaluator = new Evaluator(statement, variables);
+                var value = evaluator.Evaluate();
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
         }
 
         public void EmitTree(TextWriter writer)
