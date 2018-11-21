@@ -183,6 +183,14 @@ namespace Minsk.CodeAnalysis
             _il.Append(lastInstructionOfThenStatement);
 
             _il.InsertAfter(lastInstructionOfCondition, _il.Create(OpCodes.Brfalse_S, lastInstructionOfThenStatement));
+            if (node.ElseStatement != null)
+            {
+                EmitStatement(node.ElseStatement);
+                var lastInstructionOfElseStatement = _il.Create(OpCodes.Nop);
+                _il.Append(lastInstructionOfElseStatement);
+
+                _il.InsertBefore(lastInstructionOfThenStatement, _il.Create(OpCodes.Br_S, lastInstructionOfElseStatement));
+            }
         }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
