@@ -287,6 +287,22 @@ namespace Minsk.CodeAnalysis
                     _il.Emit(OpCodes.Ldc_I4_0);
                     _il.Emit(OpCodes.Ceq);
                     break;
+                case BoundBinaryOperatorKind.Less:
+                    _il.Emit(OpCodes.Clt);
+                    break;
+                case BoundBinaryOperatorKind.LessOrEquals:
+                    _il.Emit(OpCodes.Cgt);
+                    _il.Emit(OpCodes.Ldc_I4_0);
+                    _il.Emit(OpCodes.Ceq);
+                    break;
+                case BoundBinaryOperatorKind.Greater:
+                    _il.Emit(OpCodes.Cgt);
+                    break;
+                case BoundBinaryOperatorKind.GreaterOrEquals:
+                    _il.Emit(OpCodes.Clt);
+                    _il.Emit(OpCodes.Ldc_I4_0);
+                    _il.Emit(OpCodes.Ceq);
+                    break;
                 default:
                     throw new Exception($"Unexpected binary operator {b.Op}: {b.Op.Kind}");
             }
