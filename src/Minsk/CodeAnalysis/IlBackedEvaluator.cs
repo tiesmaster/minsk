@@ -9,13 +9,13 @@ namespace Minsk.CodeAnalysis
 {
     internal sealed class IlBackedEvaluator
     {
-        private readonly BoundStatement _root;
+        private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
         private HostMethodBuilder _ilBuilder;
         private ILProcessor _il;
 
-        public IlBackedEvaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
+        public IlBackedEvaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;
@@ -38,7 +38,7 @@ namespace Minsk.CodeAnalysis
 
         private void EmitHostMethod()
         {
-            EmitStatement(_root);
+            EmitBlockStatement(_root);
 
             InsertEmitRestoreVariablesFromArgumentToStartOfMethod();
             EmitSaveVariables();
@@ -130,21 +130,37 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        private void EmitStatement(BoundStatement node)
+        #region Emit
+
+        private void EmitBlockStatement(BoundBlockStatement node)
         {
-            switch (node.Kind)
+            foreach (var statement in node.Statements)
             {
-                case BoundNodeKind.BlockStatement:
-                    EmitBlockStatement((BoundBlockStatement)node);
-                    break;
+                EmitStatement(statement);
+            }
+        }
+
+        private void EmitStatement(BoundStatement statement)
+        {
+            switch (statement.Kind)
+            {
                 case BoundNodeKind.VariableDeclaration:
-                    EmitVariableDeclaration((BoundVariableDeclaration)node);
+                    EmitVariableDeclaration((BoundVariableDeclaration)statement);
                     break;
                 case BoundNodeKind.ExpressionStatement:
-                    EmitExpressionStatement((BoundExpressionStatement)node);
+                    EmitExpressionStatement((BoundExpressionStatement)statement);
+                    break;
+                case BoundNodeKind.GotoStatement:
+                    EmitGotoStatement((BoundGotoStatement)statement);
+                    break;
+                case BoundNodeKind.ConditionalGotoStatement:
+                    EmitConditionalGotoStatement((BoundConditionalGotoStatement)statement);
+                    break;
+                case BoundNodeKind.LabelStatement:
+                    EmitLabelStatement((BoundLabelStatement)statement);
                     break;
                 default:
-                    throw new Exception($"Unexpected node {node.Kind}");
+                    throw new Exception($"Unexpected node {statement.Kind}");
             }
         }
 
@@ -158,16 +174,27 @@ namespace Minsk.CodeAnalysis
             EmitSaveResult(node.Variable.Type);
         }
 
-        private void EmitBlockStatement(BoundBlockStatement node)
-        {
-            foreach (var statement in node.Statements)
-                EmitStatement(statement);
-        }
-
         private void EmitExpressionStatement(BoundExpressionStatement node)
         {
             EmitExpression(node.Expression);
             EmitSaveResult(node.Expression.Type);
+        }
+
+        private void EmitGotoStatement(BoundGotoStatement node)
+        {
+            _ilBuilder.AddJump(OpCodes.Br_S, node.Label);
+        }
+
+        private void EmitConditionalGotoStatement(BoundConditionalGotoStatement node)
+        {
+            EmitExpression(node.Condition);
+            var branchOpcode = node.JumpIfTrue ? OpCodes.Brtrue_S : OpCodes.Brfalse_S;
+            _ilBuilder.AddJump(branchOpcode, node.Label);
+        }
+
+        private void EmitLabelStatement(BoundLabelStatement node)
+        {
+            _ilBuilder.MarkLabel(node.Label);
         }
 
         private void EmitSaveResult(Type resultType)
@@ -315,5 +342,7 @@ namespace Minsk.CodeAnalysis
                     throw new Exception($"Unexpected binary operator {b.Op}: {b.Op.Kind}");
             }
         }
+
+        #endregion
     }
 }
