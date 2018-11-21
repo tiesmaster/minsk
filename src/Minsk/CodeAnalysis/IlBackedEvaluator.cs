@@ -140,6 +140,15 @@ namespace Minsk.CodeAnalysis
                 case BoundNodeKind.VariableDeclaration:
                     EmitVariableDeclaration((BoundVariableDeclaration)node);
                     break;
+                case BoundNodeKind.IfStatement:
+                    EmitIfStatement((BoundIfStatement)node);
+                    break;
+                // case BoundNodeKind.WhileStatement:
+                //     EmitWhileStatement((BoundWhileStatement)node);
+                //     break;
+                // case BoundNodeKind.ForStatement:
+                //     EmitForStatement((BoundForStatement)node);
+                //     break;
                 case BoundNodeKind.ExpressionStatement:
                     EmitExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -162,6 +171,18 @@ namespace Minsk.CodeAnalysis
         {
             foreach (var statement in node.Statements)
                 EmitStatement(statement);
+        }
+
+        private void EmitIfStatement(BoundIfStatement node)
+        {
+            EmitExpression(node.Condition);
+            var lastInstructionOfCondition = _il.Body.Instructions.Last();
+
+            EmitStatement(node.ThenStatement);
+            var lastInstructionOfThenStatement = _il.Create(OpCodes.Nop);
+            _il.Append(lastInstructionOfThenStatement);
+
+            _il.InsertAfter(lastInstructionOfCondition, _il.Create(OpCodes.Brfalse_S, lastInstructionOfThenStatement));
         }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
