@@ -30,9 +30,9 @@ namespace Minsk.Tests.CodeAnalysis
         [FeatureToggledInlineData("false", false)]
         [FeatureToggledInlineData("!true", false)]
         [FeatureToggledInlineData("!false", true)]
-        [FeatureToggledInlineData("{ var a = 0 (a = 10) * a }", 100)]
         [FeatureToggledInlineData("var a = 10", 10)]
         [FeatureToggledInlineData("{ var a = 10 (a * a) }", 100)]
+        [FeatureToggledInlineData("{ var a = 0 (a = 10) * a }", 100)]
         public void JitEvaluator_Computes_CorrectValues(string text, object expectedValue, bool useJitting)
         {
             var syntaxTree = SyntaxTree.Parse(text);
