@@ -47,8 +47,7 @@ namespace Minsk.CodeAnalysis
         {
             return new Compilation(this, syntaxTree);
         }
-
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, bool useJitting = false)
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
@@ -58,9 +57,22 @@ namespace Minsk.CodeAnalysis
             if (program.Diagnostics.Any())
                 return new EvaluationResult(program.Diagnostics.ToImmutableArray(), null);
 
-            var evaluator = new Evaluator(program, variables);
-            var value = evaluator.Evaluate();
+            var value = Evaluate(program, variables, useJitting);
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+        }
+
+        private static object Evaluate(BoundProgram program, Dictionary<VariableSymbol, object> variables, bool useJitting)
+        {
+            if (useJitting)
+            {
+                var evaluator = new IlBackedEvaluator(program, variables);
+                return evaluator.Evaluate();
+            }
+            else
+            {
+                var evaluator = new Evaluator(program, variables);
+                return evaluator.Evaluate();
+            }
         }
 
         public void EmitTree(TextWriter writer)
