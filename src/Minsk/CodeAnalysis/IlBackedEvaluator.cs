@@ -249,6 +249,9 @@ namespace Minsk.CodeAnalysis
                     _il.Emit(OpCodes.Ldc_I4_0);
                     _il.Emit(OpCodes.Ceq);
                     break;
+                case BoundUnaryOperatorKind.OnesComplement:
+                    _il.Emit(OpCodes.Not);
+                    break;
                 default:
                     throw new Exception($"Unexpected unary operator {u.Op}");
             }
@@ -273,10 +276,15 @@ namespace Minsk.CodeAnalysis
                 case BoundBinaryOperatorKind.Division:
                     _il.Emit(OpCodes.Div);
                     break;
+                case BoundBinaryOperatorKind.BitwiseXor:
+                    _il.Emit(OpCodes.Xor);
+                    break;
                 case BoundBinaryOperatorKind.LogicalAnd:
+                case BoundBinaryOperatorKind.BitwiseAnd:
                     _il.Emit(OpCodes.And);
                     break;
                 case BoundBinaryOperatorKind.LogicalOr:
+                case BoundBinaryOperatorKind.BitwiseOr:
                     _il.Emit(OpCodes.Or);
                     break;
                 case BoundBinaryOperatorKind.Equals:
