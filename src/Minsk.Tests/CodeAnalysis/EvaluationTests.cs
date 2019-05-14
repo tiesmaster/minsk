@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Minsk.CodeAnalysis;
 using Minsk.CodeAnalysis.Syntax;
 using Xunit;
@@ -85,9 +86,13 @@ namespace Minsk.Tests.CodeAnalysis
             var secondSubmission = SyntaxTree.Parse("a * a");
             var variables = new Dictionary<VariableSymbol, object>();
 
+            Assert.Empty(variables);
+
             // act
             var compilation = new Compilation(firstSubmission);
             var firstResult = compilation.Evaluate(variables, useJitting);
+            Assert.Equal(1, variables.Count);
+            Assert.Equal(2, variables.First().Value);
 
             compilation = compilation.ContinueWith(secondSubmission);
             var secondResult = compilation.Evaluate(variables, useJitting);
@@ -95,6 +100,8 @@ namespace Minsk.Tests.CodeAnalysis
             // assert
             Assert.Equal(2, firstResult.Value);
             Assert.Equal(4, secondResult.Value);
+            Assert.Equal(1, variables.Count);
+            Assert.Equal(2, variables.First().Value);
         }
 
         [Fact]
