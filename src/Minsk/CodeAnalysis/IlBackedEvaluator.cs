@@ -36,11 +36,45 @@ namespace Minsk.CodeAnalysis
 
         private void EmitHostMethod()
         {
+            foreach (var node in _root.GetDescendants().OfType<BoundVariableDeclaration>())
+            {
+                _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            }
+            foreach (var node in _root.GetDescendants().OfType<BoundVariableExpression>())
+            {
+                _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            }
+            foreach (var node in _root.GetDescendants().OfType<BoundAssignmentExpression>())
+            {
+                _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            }
+
+            EmitRestoreVariables();
+
             EmitBlockStatement(_root);
 
-            InsertEmitRestoreVariablesFromArgumentToStartOfMethod();
+            // var x = 10
+            // x
+            // 
+            // ---->
+            // 
+            // var x = 10;
+            // ...
+            // return x;
+            // return variables(x);
+            // return new object[] { $result, x};
+
+
+
+            // var x = y;
+            // 
+            // ---->
+            // 
+            // f(var[1] args)
+            // var x = y[0]
             EmitSaveVariables();
 
+            // return $result;
             EmitPushResult();
             EmitEndOfMethod();
         }
@@ -50,31 +84,31 @@ namespace Minsk.CodeAnalysis
             _il.Emit(OpCodes.Ldloc_0);
         }
 
-        private void InsertEmitRestoreVariablesFromArgumentToStartOfMethod()
+        private void EmitRestoreVariables()
         {
-            void InsertInstructionsAtBeginningOfMethod(ILProcessor il, IEnumerable<Instruction> instructions)
-            {
-                foreach (var instruction in instructions.Reverse())
-                {
-                    var firstInstruction = il.Body.Instructions.First();
-                    il.InsertBefore(firstInstruction, instruction);
-                }
-            }
+            // void InsertInstructionsAtBeginningOfMethod(ILProcessor il, IEnumerable<Instruction> instructions)
+            // {
+            //     foreach (var instruction in instructions.Reverse())
+            //     {
+            //         var firstInstruction = il.Body.Instructions.First();
+            //         il.InsertBefore(firstInstruction, instruction);
+            //     }
+            // }
 
-            var instructionsToInsert = new List<Instruction>();
+            // var instructionsToInsert = new List<Instruction>();
             foreach (var variableDef in _ilBuilder.Variables)
             {
                 // load variables[i] from arguments, and unbox
-                instructionsToInsert.Add(_il.Create(OpCodes.Ldarg_0));
-                instructionsToInsert.Add(_il.Create(OpCodes.Ldc_I4, variableDef.VariableIndex));
-                instructionsToInsert.Add(_il.Create(OpCodes.Ldelem_Ref));
-                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type)));
+                _il.Emit(OpCodes.Ldarg_0);
+                _il.Emit(OpCodes.Ldc_I4, variableDef.VariableIndex);
+                _il.Emit(OpCodes.Ldelem_Ref);
+                _il.Emit(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type));
 
                 // and store in given slot
-                instructionsToInsert.Add(_il.Create(OpCodes.Stloc, variableDef.Slot));
+                _il.Emit(OpCodes.Stloc, variableDef.Slot);
 
-                InsertInstructionsAtBeginningOfMethod(_il, instructionsToInsert);
-                instructionsToInsert.Clear();
+                // InsertInstructionsAtBeginningOfMethod(_il, instructionsToInsert);
+                // instructionsToInsert.Clear();
             }
         }
 
