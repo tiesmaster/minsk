@@ -13,6 +13,7 @@ namespace Minsk
         private Compilation _previous;
         private bool _showTree;
         private bool _showProgram;
+        private bool _useJit;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
         protected override void RenderLine(string line)
@@ -58,6 +59,10 @@ namespace Minsk
                     _previous = null;
                     _variables.Clear();
                     break;
+                case "#useJit":
+                    _useJit = !_useJit;
+                    Console.WriteLine(_useJit ? "Using JIT backend." : "Not using JIT backend.");
+                    break;
                 default:
                     base.EvaluateMetaCommand(input);
                     break;
@@ -100,7 +105,7 @@ namespace Minsk
             if (_showProgram)
                 compilation.EmitTree(Console.Out);
 
-            var result = compilation.Evaluate(_variables);
+            var result = compilation.Evaluate(_variables, _useJit);
 
             if (!result.Diagnostics.Any())
             {
