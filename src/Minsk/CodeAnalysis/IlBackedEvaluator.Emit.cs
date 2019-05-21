@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+
 using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Symbols;
+
 using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
@@ -74,9 +74,9 @@ namespace Minsk.CodeAnalysis
             _ilBuilder.MarkLabel(node.Label);
         }
 
-        private void EmitSaveResult(Type resultType)
+        private void EmitSaveResult(TypeSymbol resultType)
         {
-            _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(resultType));
+            _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(resultType));
             _il.Emit(OpCodes.Stloc_0);
         }
 
@@ -106,20 +106,33 @@ namespace Minsk.CodeAnalysis
 
         private void EmitLiteralExpression(BoundLiteralExpression n)
         {
-            switch (n.Value)
+            if (n.Type == TypeSymbol.Bool)
             {
-                case int i:
-                    _il.Emit(OpCodes.Ldc_I4, i);
-                    break;
-                case bool b when b:
-                    _il.Emit(OpCodes.Ldc_I4_1);
-                    break;
-                case bool b when !b:
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    break;
-                default:
-                    throw new Exception($"Unexpected type '{n.Type}' for literal value");
+                EmitBoolLiteral((bool)n.Value);
             }
+            else if (n.Type == TypeSymbol.Int)
+            {
+                EmitIntLiteral((int)n.Value);
+            }
+            else if (n.Type == TypeSymbol.String)
+            {
+                EmitStringLiteral((string)n.Value);
+            }
+        }
+
+        private void EmitBoolLiteral(bool value)
+        {
+            _il.Emit(OpCodes.Ldc_I4, value ? 1 : 0);
+        }
+
+        private void EmitIntLiteral(int value)
+        {
+            _il.Emit(OpCodes.Ldc_I4, value);
+        }
+
+        private void EmitStringLiteral(string value)
+        {
+            _il.Emit(OpCodes.Ldstr, value);
         }
 
         private void EmitVariableExpression(BoundVariableExpression v)

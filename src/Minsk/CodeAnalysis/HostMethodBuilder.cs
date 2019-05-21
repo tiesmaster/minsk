@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Minsk.CodeAnalysis.Symbols;
+using Minsk.CodeAnalysis.Binding;
 
 namespace Minsk.CodeAnalysis
 {
@@ -32,8 +34,8 @@ namespace Minsk.CodeAnalysis
         private readonly Instruction _dummyJumpInstruction;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
-        private readonly List<(Instruction, LabelSymbol)> _jumpPatchList = new List<(Instruction, LabelSymbol)>();
-        private readonly Dictionary<LabelSymbol, Instruction> _labelMapping = new Dictionary<LabelSymbol, Instruction>();
+        private readonly List<(Instruction, BoundLabel)> _jumpPatchList = new List<(Instruction, BoundLabel)>();
+        private readonly Dictionary<BoundLabel, Instruction> _labelMapping = new Dictionary<BoundLabel, Instruction>();
 
         // first variable slot is the result variable
         private int _nextFreeVariableSlot = 1;
@@ -65,7 +67,7 @@ namespace Minsk.CodeAnalysis
         }
 
         public ILProcessor HostMethodIlProcessor { get; }
-        public ModuleDefinition HostModule { get; }
+        private ModuleDefinition HostModule { get; }
         public TypeSystem TypeSystem => HostModule.TypeSystem;
 
         public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
@@ -112,27 +114,53 @@ namespace Minsk.CodeAnalysis
             return freeSlot;
         }
 
-        private void AddResultVariable()
-        {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
-        }
-
-        private void AddVariable(Type variableType)
-        {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(HostModule.ImportReference(variableType)));
-        }
-
-        public void MarkLabel(LabelSymbol label)
+        public void MarkLabel(BoundLabel label)
         {
             _labelMapping[label] = HostMethodIlProcessor.Body.Instructions.LastOrDefault();
         }
 
-        public void AddJump(OpCode jumpOpcode, LabelSymbol jumpLabel)
+        public void AddJump(OpCode jumpOpcode, BoundLabel jumpLabel)
         {
             var jumpInstruction = HostMethodIlProcessor.Create(jumpOpcode, _dummyJumpInstruction);
             _jumpPatchList.Add((jumpInstruction, jumpLabel));
 
             HostMethodIlProcessor.Append(jumpInstruction);
+        }
+
+        public TypeReference ImportReference(TypeSymbol typeSymbol)
+        {
+            var clrType = ToClrType(typeSymbol);
+            return HostModule.ImportReference(clrType);
+        }
+
+        public Type ToClrType(TypeSymbol typeSymbol)
+        {
+            if (typeSymbol == TypeSymbol.Bool)
+            {
+                return typeof(bool);
+            }
+
+            if (typeSymbol == TypeSymbol.Int)
+            {
+                return typeof(int);
+            }
+
+            if (typeSymbol == TypeSymbol.String)
+            {
+                return typeof(string);
+            }
+
+            throw new Exception($"Unsupported TypeSymbol given: {typeSymbol}");
+        }
+
+        private void AddResultVariable()
+        {
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
+        }
+
+        private void AddVariable(TypeSymbol variableType)
+        {
+            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(ImportReference(variableType)));
         }
     }
 }
