@@ -106,23 +106,33 @@ namespace Minsk.CodeAnalysis
 
         private void EmitLiteralExpression(BoundLiteralExpression n)
         {
-            switch (n.Value)
+            if (n.Type == TypeSymbol.Bool)
             {
-                case int i:
-                    _il.Emit(OpCodes.Ldc_I4, i);
-                    break;
-                case bool b when b:
-                    _il.Emit(OpCodes.Ldc_I4_1);
-                    break;
-                case bool b when !b:
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    break;
-                case string s:
-                    _il.Emit(OpCodes.Ldstr, s);
-                    break;
-                default:
-                    throw new Exception($"Unexpected type '{n.Type}' for literal value");
+                EmitBoolLiteral((bool)n.Value);
             }
+            else if (n.Type == TypeSymbol.Int)
+            {
+                EmitIntLiteral((int)n.Value);
+            }
+            else if (n.Type == TypeSymbol.String)
+            {
+                EmitStringLiteral((string)n.Value);
+            }
+        }
+
+        private void EmitBoolLiteral(bool value)
+        {
+            _il.Emit(OpCodes.Ldc_I4, value ? 1 : 0);
+        }
+
+        private void EmitIntLiteral(int value)
+        {
+            _il.Emit(OpCodes.Ldc_I4, value);
+        }
+
+        private void EmitStringLiteral(string value)
+        {
+            _il.Emit(OpCodes.Ldstr, value);
         }
 
         private void EmitVariableExpression(BoundVariableExpression v)
