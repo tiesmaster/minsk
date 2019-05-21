@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Symbols;
 using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
@@ -68,7 +69,7 @@ namespace Minsk.CodeAnalysis
                 instructionsToInsert.Add(_il.Create(OpCodes.Ldarg_0));
                 instructionsToInsert.Add(_il.Create(OpCodes.Ldc_I4, variableDef.VariableIndex));
                 instructionsToInsert.Add(_il.Create(OpCodes.Ldelem_Ref));
-                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type)));
+                instructionsToInsert.Add(_il.Create(OpCodes.Unbox_Any, _ilBuilder.ImportReference(variableDef.Variable.Type)));
 
                 // and store in given slot
                 instructionsToInsert.Add(_il.Create(OpCodes.Stloc, variableDef.Slot));
@@ -89,7 +90,7 @@ namespace Minsk.CodeAnalysis
 
                 // load the variable from the given slot, and box it
                 _il.Emit(OpCodes.Ldloc, variableDef.Slot);
-                _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(variableDef.Variable.Type));
+                _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(variableDef.Variable.Type));
 
                 _il.Emit(OpCodes.Stelem_Ref);
             }

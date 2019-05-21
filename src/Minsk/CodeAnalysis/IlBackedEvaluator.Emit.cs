@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+
 using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Symbols;
+
 using Mono.Cecil.Cil;
 
 namespace Minsk.CodeAnalysis
@@ -74,9 +74,9 @@ namespace Minsk.CodeAnalysis
             _ilBuilder.MarkLabel(node.Label);
         }
 
-        private void EmitSaveResult(Type resultType)
+        private void EmitSaveResult(TypeSymbol resultType)
         {
-            _il.Emit(OpCodes.Box, _ilBuilder.HostModule.ImportReference(resultType));
+            _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(resultType));
             _il.Emit(OpCodes.Stloc_0);
         }
 

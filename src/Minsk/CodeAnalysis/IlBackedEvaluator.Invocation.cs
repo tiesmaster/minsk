@@ -21,7 +21,7 @@ namespace Minsk.CodeAnalysis
                     let variable = variableDef.Variable
                     select _variables.TryGetValue(variable, out var value)
                         ? value
-                        : Activator.CreateInstance(variable.Type)
+                        : Activator.CreateInstance(_ilBuilder.ToClrType(variable.Type))
             ).ToArray();
         }
 
