@@ -117,6 +117,9 @@ namespace Minsk.CodeAnalysis
                 case bool b when !b:
                     _il.Emit(OpCodes.Ldc_I4_0);
                     break;
+                case string s:
+                    _il.Emit(OpCodes.Ldstr, s);
+                    break;
                 default:
                     throw new Exception($"Unexpected type '{n.Type}' for literal value");
             }

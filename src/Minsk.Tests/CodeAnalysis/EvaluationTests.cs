@@ -62,6 +62,7 @@ namespace Minsk.Tests.CodeAnalysis
         [FeatureToggledInlineData("false", false)]
         [FeatureToggledInlineData("!true", false)]
         [FeatureToggledInlineData("!false", true)]
+        [FeatureToggledInlineData("\"Hoi\"", "Hoi")]
         [FeatureToggledInlineData("var a = 10", 10)]
         [FeatureToggledInlineData("{ var a = 10 (a * a) }", 100)]
         [FeatureToggledInlineData("{ var a = 0 (a = 10) * a }", 100)]
