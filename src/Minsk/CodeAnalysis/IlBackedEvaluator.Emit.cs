@@ -275,7 +275,12 @@ namespace Minsk.CodeAnalysis
 
         internal static MethodInfo LookupFunction(BoundCallExpression node)
         {
-            return typeof(BuiltinFunctionImplementations).GetMethod(node.Function.Name);
+            return typeof(BuiltinFunctionImplementations).GetMethod(ToCamelCase(node.Function.Name));
+        }
+
+        private static string ToCamelCase(string name)
+        {
+            return char.ToUpper(name[0]) + name.Substring(1);
         }
 
         public static bool string_to_bool(string value) => Convert.ToBoolean(value);
@@ -283,15 +288,15 @@ namespace Minsk.CodeAnalysis
         public static string bool_to_string(bool value) => Convert.ToString(value);
         public static string int_to_string(int value) => Convert.ToString(value);
 
-        public static string input() => Console.ReadLine();
+        public static string Input() => Console.ReadLine();
 
-        public static object print(string value)
+        public static object Print(string value)
         {
             Console.WriteLine(value);
             return null;
         }
 
-        public static int rnd(int maxValue)
+        public static int Rnd(int maxValue)
         {
             var random = new Random();
             return random.Next(maxValue);
