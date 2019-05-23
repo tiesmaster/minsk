@@ -249,23 +249,26 @@ namespace Minsk.CodeAnalysis
         {
             if (node.Function == BuiltinFunctions.Input)
             {
-                _il.Emit(OpCodes.Call, InputFunction);
+                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
+                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
             }
 
             if (node.Function == BuiltinFunctions.Print)
             {
                 EmitExpression(node.Arguments[0]);
-                _il.Emit(OpCodes.Call, PrintFunction);
-                _il.Emit(OpCodes.Ldnull);
+
+                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
+                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
             }
 
             if (node.Function == BuiltinFunctions.Rnd)
             {
-                throw new NotImplementedException();
+                EmitExpression(node.Arguments[0]);
+
+                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
+                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
             }
         }
-
-        public MethodReference InputFunction => _ilBuilder.ImportReference(typeof(Console).GetMethod(nameof(Console.ReadLine)));
 
         public MethodReference PrintFunction
         {
@@ -282,8 +285,8 @@ namespace Minsk.CodeAnalysis
         {
             EmitExpression(node.Expression);
 
-            var convertMethod = BuiltinFunctionImplementations.LookupFunction(node);
-            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(convertMethod));
+            var conversionFunctionMethodWrapper = BuiltinFunctionImplementations.LookupFunction(node);
+            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(conversionFunctionMethodWrapper));
         }
     }
 
@@ -295,9 +298,43 @@ namespace Minsk.CodeAnalysis
             return typeof(BuiltinFunctionImplementations).GetMethod(name);
         }
 
+        internal static MethodInfo LookupFunction(BoundCallExpression node)
+        {
+            if (node.Function == BuiltinFunctions.Input)
+            {
+                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Input));
+            }
+
+            if (node.Function == BuiltinFunctions.Print)
+            {
+                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Print));
+            }
+
+            if (node.Function == BuiltinFunctions.Rnd)
+            {
+                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Rnd));
+            }
+
+            throw new Exception($"Unexpected function {node.Function}");
+        }
+
         public static bool string_to_bool(string value) => Convert.ToBoolean(value);
         public static int string_to_int(string value) => Convert.ToInt32(value);
         public static string bool_to_string(bool value) => Convert.ToString(value);
         public static string int_to_string(int value) => Convert.ToString(value);
+
+        public static string Input() => Console.ReadLine();
+
+        public static object Print(string value)
+        {
+            Console.WriteLine(value);
+            return null;
+        }
+
+        public static int Rnd(int maxValue)
+        {
+            var random = new Random();
+            return random.Next(maxValue);
+        }
     }
 }
