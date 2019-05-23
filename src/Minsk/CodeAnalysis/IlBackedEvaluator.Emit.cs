@@ -247,27 +247,13 @@ namespace Minsk.CodeAnalysis
 
         private void EmitCallExpression(BoundCallExpression node)
         {
-            if (node.Function == BuiltinFunctions.Input)
+            foreach (var argument in node.Arguments)
             {
-                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
+                EmitExpression(argument);
             }
 
-            if (node.Function == BuiltinFunctions.Print)
-            {
-                EmitExpression(node.Arguments[0]);
-
-                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
-            }
-
-            if (node.Function == BuiltinFunctions.Rnd)
-            {
-                EmitExpression(node.Arguments[0]);
-
-                var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-                _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
-            }
+            var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
+            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
         }
 
         private void EmitConversionExpression(BoundConversionExpression node)
