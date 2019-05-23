@@ -5,6 +5,7 @@ using Minsk.CodeAnalysis.Symbols;
 
 using Mono.Cecil.Cil;
 using System.Reflection;
+using Mono.Cecil;
 
 namespace Minsk.CodeAnalysis
 {
@@ -77,7 +78,11 @@ namespace Minsk.CodeAnalysis
 
         private void EmitSaveResult(TypeSymbol resultType)
         {
-            _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(resultType));
+            if (resultType != TypeSymbol.Void)
+            {
+                _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(resultType));
+            }
+
             _il.Emit(OpCodes.Stloc_0);
         }
 
@@ -99,6 +104,9 @@ namespace Minsk.CodeAnalysis
                     break;
                 case BoundNodeKind.BinaryExpression:
                     EmitBinaryExpression((BoundBinaryExpression)node);
+                    break;
+                case BoundNodeKind.CallExpression:
+                    EmitCallExpression((BoundCallExpression)node);
                     break;
                 case BoundNodeKind.ConversionExpression:
                     EmitConversionExpression((BoundConversionExpression)node);
@@ -237,15 +245,48 @@ namespace Minsk.CodeAnalysis
             }
         }
 
+        private void EmitCallExpression(BoundCallExpression node)
+        {
+            if (node.Function == BuiltinFunctions.Input)
+            {
+                _il.Emit(OpCodes.Call, InputFunction);
+            }
+
+            if (node.Function == BuiltinFunctions.Print)
+            {
+                EmitExpression(node.Arguments[0]);
+                _il.Emit(OpCodes.Call, PrintFunction);
+                _il.Emit(OpCodes.Ldnull);
+            }
+
+            if (node.Function == BuiltinFunctions.Rnd)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public MethodReference InputFunction => _ilBuilder.ImportReference(typeof(Console).GetMethod(nameof(Console.ReadLine)));
+
+        public MethodReference PrintFunction
+        {
+            get
+            {
+                return _ilBuilder.ImportReference(
+                    typeof(Console).GetMethod(
+                        nameof(Console.WriteLine),
+                        new Type[] { typeof(string) }));
+            }
+        }
+
         private void EmitConversionExpression(BoundConversionExpression node)
         {
             EmitExpression(node.Expression);
 
-            var convertMethod = GetConvertMethod(node);
+            var convertMethod = LookupConversionFunction(node);
             _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(convertMethod));
         }
 
-        private MethodInfo GetConvertMethod(BoundConversionExpression node)
+        private MethodInfo LookupConversionFunction(BoundConversionExpression node)
         {
             if (node.Type == TypeSymbol.Bool)
             {
