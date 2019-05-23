@@ -133,6 +133,8 @@ namespace Minsk.CodeAnalysis
             return HostModule.ImportReference(clrType);
         }
 
+        public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
+
         public Type ToClrType(TypeSymbol typeSymbol)
         {
             if (typeSymbol == TypeSymbol.Bool)

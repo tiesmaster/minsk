@@ -64,6 +64,7 @@ namespace Minsk.Tests.CodeAnalysis
         [FeatureToggledInlineData("!false", true)]
         [FeatureToggledInlineData("\"Hoi\"", "Hoi")]
         [FeatureToggledInlineData("string(true)", "True")]
+        [FeatureToggledInlineData("string(1)", "1")]
         [FeatureToggledInlineData("bool(\"true\")", true)]
         [FeatureToggledInlineData("int(\"1\")", 1)]
         [FeatureToggledInlineData("var a = 10", 10)]

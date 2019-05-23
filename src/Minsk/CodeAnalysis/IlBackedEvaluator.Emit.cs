@@ -4,6 +4,7 @@ using Minsk.CodeAnalysis.Binding;
 using Minsk.CodeAnalysis.Symbols;
 
 using Mono.Cecil.Cil;
+using System.Reflection;
 
 namespace Minsk.CodeAnalysis
 {
@@ -98,6 +99,9 @@ namespace Minsk.CodeAnalysis
                     break;
                 case BoundNodeKind.BinaryExpression:
                     EmitBinaryExpression((BoundBinaryExpression)node);
+                    break;
+                case BoundNodeKind.ConversionExpression:
+                    EmitConversionExpression((BoundConversionExpression)node);
                     break;
                 default:
                     throw new Exception($"Unexpected node {node.Kind}");
@@ -230,6 +234,47 @@ namespace Minsk.CodeAnalysis
                     break;
                 default:
                     throw new Exception($"Unexpected binary operator {b.Op}: {b.Op.Kind}");
+            }
+        }
+
+        private void EmitConversionExpression(BoundConversionExpression node)
+        {
+            EmitExpression(node.Expression);
+
+            var convertMethod = GetConvertMethod(node);
+            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(convertMethod));
+        }
+
+        private MethodInfo GetConvertMethod(BoundConversionExpression node)
+        {
+            if (node.Type == TypeSymbol.Bool)
+            {
+                // string -> bool
+
+                return typeof(Convert).GetMethod(
+                    nameof(Convert.ToBoolean),
+                    new Type[] { typeof(string) });
+            }
+            else if (node.Type == TypeSymbol.Int)
+            {
+                // string -> int
+
+                return typeof(Convert).GetMethod(
+                    nameof(Convert.ToInt32),
+                    new Type[] { typeof(string) });
+            }
+            else if (node.Type == TypeSymbol.String)
+            {
+                // bool -> string
+                // int -> string
+
+                return typeof(Convert).GetMethod(
+                    nameof(Convert.ToString),
+                    new Type[] { _ilBuilder.ToClrType(node.Expression.Type) });
+            }
+            else
+            {
+                throw new Exception($"Unexpected type {node.Type}");
             }
         }
     }
