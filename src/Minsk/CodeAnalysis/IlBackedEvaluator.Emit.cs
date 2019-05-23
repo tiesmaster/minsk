@@ -269,7 +269,7 @@ namespace Minsk.CodeAnalysis
     {
         internal static MethodInfo LookupFunction(BoundConversionExpression node)
         {
-            string name = $"{node.Expression.Type}_to_{node.Type}";
+            string name = $"{ToCamelCase(node.Expression.Type)}To{ToCamelCase(node.Type)}";
             return typeof(BuiltinFunctionImplementations).GetMethod(name);
         }
 
@@ -278,15 +278,17 @@ namespace Minsk.CodeAnalysis
             return typeof(BuiltinFunctionImplementations).GetMethod(ToCamelCase(node.Function.Name));
         }
 
+        private static string ToCamelCase(TypeSymbol type) => ToCamelCase(type.ToString());
+
         private static string ToCamelCase(string name)
         {
             return char.ToUpper(name[0]) + name.Substring(1);
         }
 
-        public static bool string_to_bool(string value) => Convert.ToBoolean(value);
-        public static int string_to_int(string value) => Convert.ToInt32(value);
-        public static string bool_to_string(bool value) => Convert.ToString(value);
-        public static string int_to_string(int value) => Convert.ToString(value);
+        public static bool StringToBool(string value) => Convert.ToBoolean(value);
+        public static int StringToInt(string value) => Convert.ToInt32(value);
+        public static string BoolToString(bool value) => Convert.ToString(value);
+        public static string IntToString(int value) => Convert.ToString(value);
 
         public static string Input() => Console.ReadLine();
 
