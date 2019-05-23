@@ -282,41 +282,22 @@ namespace Minsk.CodeAnalysis
         {
             EmitExpression(node.Expression);
 
-            var convertMethod = LookupConversionFunction(node);
+            var convertMethod = BuiltinFunctionImplementations.LookupFunction(node);
             _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(convertMethod));
         }
+    }
 
-        private MethodInfo LookupConversionFunction(BoundConversionExpression node)
+    public static class BuiltinFunctionImplementations
+    {
+        internal static MethodInfo LookupFunction(BoundConversionExpression node)
         {
-            if (node.Type == TypeSymbol.Bool)
-            {
-                // string -> bool
-
-                return typeof(Convert).GetMethod(
-                    nameof(Convert.ToBoolean),
-                    new Type[] { typeof(string) });
-            }
-            else if (node.Type == TypeSymbol.Int)
-            {
-                // string -> int
-
-                return typeof(Convert).GetMethod(
-                    nameof(Convert.ToInt32),
-                    new Type[] { typeof(string) });
-            }
-            else if (node.Type == TypeSymbol.String)
-            {
-                // bool -> string
-                // int -> string
-
-                return typeof(Convert).GetMethod(
-                    nameof(Convert.ToString),
-                    new Type[] { _ilBuilder.ToClrType(node.Expression.Type) });
-            }
-            else
-            {
-                throw new Exception($"Unexpected type {node.Type}");
-            }
+            string name = $"{node.Expression.Type}_to_{node.Type}";
+            return typeof(BuiltinFunctionImplementations).GetMethod(name);
         }
+
+        public static bool string_to_bool(string value) => Convert.ToBoolean(value);
+        public static int string_to_int(string value) => Convert.ToInt32(value);
+        public static string bool_to_string(bool value) => Convert.ToString(value);
+        public static string int_to_string(int value) => Convert.ToString(value);
     }
 }
