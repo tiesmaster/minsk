@@ -270,17 +270,6 @@ namespace Minsk.CodeAnalysis
             }
         }
 
-        public MethodReference PrintFunction
-        {
-            get
-            {
-                return _ilBuilder.ImportReference(
-                    typeof(Console).GetMethod(
-                        nameof(Console.WriteLine),
-                        new Type[] { typeof(string) }));
-            }
-        }
-
         private void EmitConversionExpression(BoundConversionExpression node)
         {
             EmitExpression(node.Expression);
@@ -300,22 +289,7 @@ namespace Minsk.CodeAnalysis
 
         internal static MethodInfo LookupFunction(BoundCallExpression node)
         {
-            if (node.Function == BuiltinFunctions.Input)
-            {
-                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Input));
-            }
-
-            if (node.Function == BuiltinFunctions.Print)
-            {
-                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Print));
-            }
-
-            if (node.Function == BuiltinFunctions.Rnd)
-            {
-                return typeof(BuiltinFunctionImplementations).GetMethod(nameof(Rnd));
-            }
-
-            throw new Exception($"Unexpected function {node.Function}");
+            return typeof(BuiltinFunctionImplementations).GetMethod(node.Function.Name);
         }
 
         public static bool string_to_bool(string value) => Convert.ToBoolean(value);
@@ -323,15 +297,15 @@ namespace Minsk.CodeAnalysis
         public static string bool_to_string(bool value) => Convert.ToString(value);
         public static string int_to_string(int value) => Convert.ToString(value);
 
-        public static string Input() => Console.ReadLine();
+        public static string input() => Console.ReadLine();
 
-        public static object Print(string value)
+        public static object print(string value)
         {
             Console.WriteLine(value);
             return null;
         }
 
-        public static int Rnd(int maxValue)
+        public static int rnd(int maxValue)
         {
             var random = new Random();
             return random.Next(maxValue);
