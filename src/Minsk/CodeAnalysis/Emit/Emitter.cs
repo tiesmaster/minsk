@@ -1,16 +1,25 @@
 ﻿using System;
+using System.Reflection;
 
 using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Hosting;
 using Minsk.CodeAnalysis.Symbols;
 
 using Mono.Cecil.Cil;
-using System.Reflection;
-using Mono.Cecil;
 
-namespace Minsk.CodeAnalysis
+namespace Minsk.CodeAnalysis.Emit
 {
-    internal sealed partial class IlBackedEvaluator
+    internal sealed partial class Emitter
     {
+        private readonly EmitHelper _emitHelper;
+        private readonly ILProcessor _il;
+
+        public Emitter(HostMethodDefinition hostMethodDefinition)
+        {
+            _emitHelper = new EmitHelper(hostMethodDefinition);
+            _il = _emitHelper.HostMethodIlProcessor;
+        }
+
         private void EmitBlockStatement(BoundBlockStatement node)
         {
             foreach (var statement in node.Statements)
@@ -46,7 +55,7 @@ namespace Minsk.CodeAnalysis
         private void EmitVariableDeclaration(BoundVariableDeclaration node)
         {
             EmitExpression(node.Initializer);
-            var slot = _ilBuilder.GetOrCreateVariableSlot(node.Variable);
+            var slot = _emitHelper.GetOrCreateVariableSlot(node.Variable);
             _il.Emit(OpCodes.Stloc, slot);
 
             _il.Emit(OpCodes.Ldloc, slot);
@@ -61,26 +70,26 @@ namespace Minsk.CodeAnalysis
 
         private void EmitGotoStatement(BoundGotoStatement node)
         {
-            _ilBuilder.AddJump(OpCodes.Br_S, node.Label);
+            _emitHelper.AddJump(OpCodes.Br_S, node.Label);
         }
 
         private void EmitConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             EmitExpression(node.Condition);
             var branchOpcode = node.JumpIfTrue ? OpCodes.Brtrue_S : OpCodes.Brfalse_S;
-            _ilBuilder.AddJump(branchOpcode, node.Label);
+            _emitHelper.AddJump(branchOpcode, node.Label);
         }
 
         private void EmitLabelStatement(BoundLabelStatement node)
         {
-            _ilBuilder.MarkLabel(node.Label);
+            _emitHelper.MarkLabel(node.Label);
         }
 
         private void EmitSaveResult(TypeSymbol resultType)
         {
             if (resultType != TypeSymbol.Void)
             {
-                _il.Emit(OpCodes.Box, _ilBuilder.ImportReference(resultType));
+                _il.Emit(OpCodes.Box, _emitHelper.ImportReference(resultType));
             }
 
             _il.Emit(OpCodes.Stloc_0);
@@ -149,14 +158,14 @@ namespace Minsk.CodeAnalysis
 
         private void EmitVariableExpression(BoundVariableExpression v)
         {
-            var slot = _ilBuilder.GetOrCreateVariableSlot(v.Variable);
+            var slot = _emitHelper.GetOrCreateVariableSlot(v.Variable);
             _il.Emit(OpCodes.Ldloc, slot);
         }
 
         private void EmitAssignmentExpression(BoundAssignmentExpression a)
         {
             EmitExpression(a.Expression);
-            var slot = _ilBuilder.GetOrCreateVariableSlot(a.Variable);
+            var slot = _emitHelper.GetOrCreateVariableSlot(a.Variable);
             _il.Emit(OpCodes.Stloc, slot);
 
             // push result of the expression back on the stack, since this expression also produces a value downstream
@@ -253,7 +262,7 @@ namespace Minsk.CodeAnalysis
             }
 
             var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(builtinFunctionWrapperMethod));
+            _il.Emit(OpCodes.Call, _emitHelper.ImportReference(builtinFunctionWrapperMethod));
         }
 
         private void EmitConversionExpression(BoundConversionExpression node)
@@ -261,7 +270,7 @@ namespace Minsk.CodeAnalysis
             EmitExpression(node.Expression);
 
             var conversionFunctionMethodWrapper = BuiltinFunctionImplementations.LookupFunction(node);
-            _il.Emit(OpCodes.Call, _ilBuilder.ImportReference(conversionFunctionMethodWrapper));
+            _il.Emit(OpCodes.Call, _emitHelper.ImportReference(conversionFunctionMethodWrapper));
         }
     }
 

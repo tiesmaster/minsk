@@ -1,32 +1,20 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+
+using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Symbols;
+
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Minsk.CodeAnalysis.Symbols;
-using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Hosting;
 
-namespace Minsk.CodeAnalysis
+namespace Minsk.CodeAnalysis.Emit
 {
-    internal class VariableDef
+    internal class EmitHelper
     {
-        public VariableDef(VariableSymbol variable, int slot)
-        {
-            Variable = variable;
-            Slot = slot;
-        }
-
-        public VariableSymbol Variable { get; }
-        public int Slot { get; }
-        public int VariableIndex => Slot - 1;
-    }
-
-    internal class HostMethodBuilder
-    {
-        private const string _hostAssemblyName = "HostAssembly";
-        private const string _hostTypeName = "HostType";
-        private const string _hostMethodName = "HostMethod";
+        private readonly HostMethodDefinition _hostingHostMethodDefinition;
 
         private readonly AssemblyDefinition _hostAssemblyDefinition;
 
@@ -40,19 +28,23 @@ namespace Minsk.CodeAnalysis
         // first variable slot is the result variable
         private int _nextFreeVariableSlot = 1;
 
-        public HostMethodBuilder()
+        public EmitHelper(HostMethodDefinition hostingHostMethodDefinition)
         {
+            _hostingHostMethodDefinition = hostingHostMethodDefinition;
+
             _hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(_hostAssemblyName, new Version(1, 0, 0, 0)), _hostAssemblyName, ModuleKind.Dll);
+                new AssemblyNameDefinition(
+                    _hostingHostMethodDefinition.AssemblyName,
+                    new Version(1, 0, 0, 0)), _hostingHostMethodDefinition.AssemblyName, ModuleKind.Dll);
 
             HostModule = _hostAssemblyDefinition.MainModule;
 
-            var hostTypeDefinition = new TypeDefinition(null, _hostTypeName,
+            var hostTypeDefinition = new TypeDefinition(null, _hostingHostMethodDefinition.TypeName,
                 TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
 
             HostModule.Types.Add(hostTypeDefinition);
 
-            _hostMethodDefinition = new MethodDefinition(_hostMethodName,
+            _hostMethodDefinition = new MethodDefinition(_hostingHostMethodDefinition.MethodName,
                 MethodAttributes.Public | MethodAttributes.Static, TypeSystem.Object);
 
             _hostMethodDefinition.Parameters.Add(
@@ -72,7 +64,7 @@ namespace Minsk.CodeAnalysis
 
         public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
 
-        public HostMethod Build()
+        public HostMethod Finalize()
         {
             PatchupJumps();
             return CreateHostMethod();
@@ -94,9 +86,7 @@ namespace Minsk.CodeAnalysis
                 _hostAssemblyDefinition.Write(ms);
 
                 var peBytes = ms.ToArray();
-                var assembly = System.Reflection.Assembly.Load(peBytes);
-
-                return new HostMethod(assembly, _hostTypeName, _hostMethodName);
+                return new HostMethod(_hostingHostMethodDefinition, peBytes, Variables);
             }
         }
 
@@ -129,31 +119,11 @@ namespace Minsk.CodeAnalysis
 
         public TypeReference ImportReference(TypeSymbol typeSymbol)
         {
-            var clrType = ToClrType(typeSymbol);
+            var clrType = typeSymbol.ClrType;
             return HostModule.ImportReference(clrType);
         }
 
         public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
-
-        public Type ToClrType(TypeSymbol typeSymbol)
-        {
-            if (typeSymbol == TypeSymbol.Bool)
-            {
-                return typeof(bool);
-            }
-
-            if (typeSymbol == TypeSymbol.Int)
-            {
-                return typeof(int);
-            }
-
-            if (typeSymbol == TypeSymbol.String)
-            {
-                return typeof(string);
-            }
-
-            throw new Exception($"Unsupported TypeSymbol given: {typeSymbol}");
-        }
 
         private void AddResultVariable()
         {

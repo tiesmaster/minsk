@@ -1,3 +1,5 @@
+using System;
+
 namespace Minsk.CodeAnalysis.Symbols
 {
     public sealed class TypeSymbol  : Symbol
@@ -14,5 +16,28 @@ namespace Minsk.CodeAnalysis.Symbols
         }
 
         public override SymbolKind Kind => SymbolKind.Type;
+
+        public Type ClrType
+        {
+            get
+            {
+                if (this == Bool)
+                {
+                    return typeof(bool);
+                }
+
+                if (this == Int)
+                {
+                    return typeof(int);
+                }
+
+                if (this == String)
+                {
+                    return typeof(string);
+                }
+
+                throw new Exception($"Unsupported TypeSymbol given: {this}");
+            }
+        }
     }
 }
