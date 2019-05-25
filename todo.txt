@@ -1,0 +1,31 @@
+TODO:
+ * voeg toe dat je de gegenereerde IL kan printen
+        #showIL
+ * REPL op OSX fixen
+ * aantal commits upstream brengen (ncrunch, in evaluator tests: string, conversions, rnd)
+
+
+
+{
+    var i = 10
+    while(i < 0)
+    {
+        i = i - 1
+    }
+}
+
+het idee om de EmitSaveResult en EmitPushResult te "lowerer" oid is:
+
+    * de expression statement en de VariableDeclaration hoeven alleen een resultaat op te slaan als ze de laatste
+            "resultaat producerende" statement zijn in de compilation unit
+    * dus die "EmitSaveResult" moet helemaal weg
+    * in of na de EmitExpressionStatement moet een "pop" komen van de waarde van de laatste expression
+        behalve als dit de laatste expression statement is
+        + dus dit kunnen we doen door een extra bound node toe te voegen die de "pop" doet (naar "/dev/null")
+    * de EmitVariableDeclaration moet alleen de _il.Emit(OpCodes.Ldloc, slot) doen als die de laaste is,
+            anders moet die gewoon de waarde in de juiste slot zetten en that's all
+        + dit kunnen we doen door een BoundVariableExpression erachter te gooien, dan wordt de variable geladen, zoals verwacht
+    * je moet dan nog wel de EmitPushResult verwijderen, of vervangen door het boxen op basis van de juiste typesymbol van de resultaat
+        + kortom, je moet dan zoiets als een BoundReturnNode toevoegen die dan de type van de resultaat krijgt
+
+
