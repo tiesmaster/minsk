@@ -81,5 +81,14 @@ namespace Minsk.CodeAnalysis
             var result = GlobalScope.Statement;
             return Lowerer.Lower(result);
         }
+
+        public void EmitIL(TextWriter writer)
+        {
+            var statement = GetStatement();
+
+            var evaluator = new IlBackedEvaluator(statement);
+
+            evaluator.WriteTo(writer);
+        }
     }
 }
