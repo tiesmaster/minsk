@@ -80,5 +80,14 @@ namespace Minsk.CodeAnalysis
             var program = Binder.BindProgram(GlobalScope);
             program.Statement.WriteTo(writer);
         }
+
+        public void EmitIL(TextWriter writer)
+        {
+            var statement = GetStatement();
+
+            var evaluator = new IlBackedEvaluator(statement);
+
+            evaluator.WriteTo(writer);
+        }
     }
 }

@@ -1,7 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+
+using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.Disassembler;
+using ICSharpCode.Decompiler.Metadata;
 
 using Minsk.CodeAnalysis.Symbols;
 
@@ -63,6 +69,22 @@ namespace Minsk.CodeAnalysis.Hosting
             foreach (var variableDef in _variableDefinitions)
             {
                 variables[variableDef.Variable] = variableValuesInHost[variableDef.VariableIndex];
+            }
+        }
+
+        public void WriteTo(TextWriter writer)
+        {
+            using (var peStream = new MemoryStream(_peBytes))
+            using (var peFile = new PEFile(_hostMethodDefinition.AssemblyName, peStream))
+            {
+                var disassembler = new MethodBodyDisassembler(new PlainTextOutput(writer), CancellationToken.None);
+                var mdReader = peFile.Metadata;
+
+                var hostTypeDefinition = mdReader.GetTypeDefinition(
+                    mdReader.TypeDefinitions.Single(x => x.GetFullTypeName(mdReader).Name.EndsWith(_hostMethodDefinition.TypeName)));
+                var hostMethodDefinitionHandle = hostTypeDefinition.GetMethods().Single();
+
+                disassembler.Disassemble(peFile, hostMethodDefinitionHandle);
             }
         }
     }
