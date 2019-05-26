@@ -47,6 +47,9 @@ namespace Minsk.CodeAnalysis.Emit
                 case BoundNodeKind.LabelStatement:
                     EmitLabelStatement((BoundLabelStatement)statement);
                     break;
+                case BoundNodeKind.AssignResultVariableStatement:
+                    EmitAssignResultVariableStatement((BoundAssignResultVariableStatement)statement);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {statement.Kind}");
             }
@@ -83,6 +86,10 @@ namespace Minsk.CodeAnalysis.Emit
         private void EmitLabelStatement(BoundLabelStatement node)
         {
             _emitHelper.MarkLabel(node.Label);
+        }
+
+        private void EmitAssignResultVariableStatement(BoundAssignResultVariableStatement node)
+        {
         }
 
         private void EmitSaveResult(TypeSymbol resultType)

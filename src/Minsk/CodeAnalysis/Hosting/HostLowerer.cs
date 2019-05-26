@@ -1,4 +1,6 @@
-﻿using Minsk.CodeAnalysis.Binding;
+﻿using System.Collections.Immutable;
+
+using Minsk.CodeAnalysis.Binding;
 
 namespace Minsk.CodeAnalysis.Hosting
 {
@@ -13,6 +15,15 @@ namespace Minsk.CodeAnalysis.Hosting
             var hostLowerer = new HostLowerer();
             var result = hostLowerer.RewriteStatement(statement);
             return Flatten(result);
+        }
+
+        protected override BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
+        {
+            var boundExpressionStatement = (BoundExpressionStatement)base.RewriteExpressionStatement(node);
+
+            var assignResult = new BoundAssignResultVariableStatement(boundExpressionStatement.Expression.Type);
+
+            return new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(boundExpressionStatement, assignResult));
         }
     }
 }
