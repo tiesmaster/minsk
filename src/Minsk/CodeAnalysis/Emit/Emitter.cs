@@ -68,7 +68,6 @@ namespace Minsk.CodeAnalysis.Emit
         private void EmitExpressionStatement(BoundExpressionStatement node)
         {
             EmitExpression(node.Expression);
-            EmitSaveResult(node.Expression.Type);
         }
 
         private void EmitGotoStatement(BoundGotoStatement node)
@@ -90,6 +89,14 @@ namespace Minsk.CodeAnalysis.Emit
 
         private void EmitAssignResultVariableStatement(BoundAssignResultVariableStatement node)
         {
+            // TODO: also "lower" this
+
+            if (node.Type != TypeSymbol.Void)
+            {
+                _il.Emit(OpCodes.Box, _emitHelper.ImportReference(node.Type));
+            }
+
+            _il.Emit(OpCodes.Stloc_0);
         }
 
         private void EmitSaveResult(TypeSymbol resultType)
