@@ -28,30 +28,6 @@ namespace Minsk.CodeAnalysis.Lowering
             return Flatten(result);
         }
 
-        private static BoundBlockStatement Flatten(BoundStatement statement)
-        {
-            var builder = ImmutableArray.CreateBuilder<BoundStatement>();
-            var stack = new Stack<BoundStatement>();
-            stack.Push(statement);
-
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-
-                if (current is BoundBlockStatement block)
-                {
-                    foreach (var s in block.Statements.Reverse())
-                        stack.Push(s);
-                }
-                else
-                {
-                    builder.Add(current);
-                }
-            }
-
-            return new BoundBlockStatement(builder.ToImmutable());
-        }
-
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
         {
             if (node.ElseStatement == null)

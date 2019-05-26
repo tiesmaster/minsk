@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Minsk.CodeAnalysis.Binding
 {
@@ -234,6 +236,30 @@ namespace Minsk.CodeAnalysis.Binding
                 return node;
 
             return new BoundConversionExpression(node.Type, expression);
+        }
+
+        protected static BoundBlockStatement Flatten(BoundStatement statement)
+        {
+            var builder = ImmutableArray.CreateBuilder<BoundStatement>();
+            var stack = new Stack<BoundStatement>();
+            stack.Push(statement);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+
+                if (current is BoundBlockStatement block)
+                {
+                    foreach (var s in block.Statements.Reverse())
+                        stack.Push(s);
+                }
+                else
+                {
+                    builder.Add(current);
+                }
+            }
+
+            return new BoundBlockStatement(builder.ToImmutable());
         }
     }
 }
