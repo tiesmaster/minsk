@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+
 using Minsk.CodeAnalysis.Binding;
 using Minsk.CodeAnalysis.Emit;
 using Minsk.CodeAnalysis.Hosting;
@@ -30,7 +30,7 @@ namespace Minsk.CodeAnalysis
         {
             var emitter = new Emitter(_hostMethodDefinition);
 
-            var hostMethod = emitter.EmitHostMethod(_root);
+            var hostMethod = emitter.EmitHostMethod(GetHostingRoot());
             var result = hostMethod.Run(_variables);
 
             return result;
@@ -40,9 +40,11 @@ namespace Minsk.CodeAnalysis
         {
             var emitter = new Emitter(_hostMethodDefinition);
 
-            var hostMethod = emitter.EmitHostMethod(_root);
+            var hostMethod = emitter.EmitHostMethod(GetHostingRoot());
 
             hostMethod.WriteTo(writer);
         }
+
+        private BoundBlockStatement GetHostingRoot() => HostLowerer.Lower(_root);
     }
 }

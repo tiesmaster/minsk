@@ -11,7 +11,7 @@ namespace Minsk.Tests.CodeAnalysis.Emit
     public class PrintILTests
     {
         [Fact]
-        public void Hoi()
+        public void SimpleExpression()
         {
             var text = "1";
             var syntaxTree = SyntaxTree.Parse(text);
