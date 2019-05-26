@@ -19,11 +19,26 @@ namespace Minsk.CodeAnalysis.Hosting
 
         protected override BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
-            var boundExpressionStatement = (BoundExpressionStatement)base.RewriteExpressionStatement(node);
+            var expression = (BoundExpressionStatement)base.RewriteExpressionStatement(node);
 
-            var assignResult = new BoundAssignResultVariableStatement(boundExpressionStatement.Expression.Type);
+            var assignResult = new BoundAssignResultVariableStatement(expression.Expression.Type);
 
-            return new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(boundExpressionStatement, assignResult));
+            return new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(expression, assignResult));
+        }
+
+        protected override BoundStatement RewriteVariableDeclaration(BoundVariableDeclaration node)
+        {
+            var variableDeclaration = (BoundVariableDeclaration)base.RewriteVariableDeclaration(node);
+
+            var variableExpression = new BoundVariableExpression(variableDeclaration.Variable);
+            var expressionStatement = new BoundExpressionStatement(variableExpression);
+
+            var assignResult = new BoundAssignResultVariableStatement(variableDeclaration.Variable.Type);
+
+            return new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
+                variableDeclaration,
+                expressionStatement,
+                assignResult));
         }
     }
 }

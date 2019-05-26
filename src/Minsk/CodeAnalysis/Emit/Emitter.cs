@@ -60,9 +60,6 @@ namespace Minsk.CodeAnalysis.Emit
             EmitExpression(node.Initializer);
             var slot = _emitHelper.GetOrCreateVariableSlot(node.Variable);
             _il.Emit(OpCodes.Stloc, slot);
-
-            _il.Emit(OpCodes.Ldloc, slot);
-            EmitSaveResult(node.Variable.Type);
         }
 
         private void EmitExpressionStatement(BoundExpressionStatement node)
@@ -94,16 +91,6 @@ namespace Minsk.CodeAnalysis.Emit
             if (node.Type != TypeSymbol.Void)
             {
                 _il.Emit(OpCodes.Box, _emitHelper.ImportReference(node.Type));
-            }
-
-            _il.Emit(OpCodes.Stloc_0);
-        }
-
-        private void EmitSaveResult(TypeSymbol resultType)
-        {
-            if (resultType != TypeSymbol.Void)
-            {
-                _il.Emit(OpCodes.Box, _emitHelper.ImportReference(resultType));
             }
 
             _il.Emit(OpCodes.Stloc_0);
