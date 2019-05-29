@@ -46,11 +46,11 @@ namespace Minsk.CodeAnalysis.Emit
             }
         }
 
-        private void EmitFunction(FunctionSymbol declaration, BoundBlockStatement body)
+        private void EmitFunction(FunctionSymbol symbol, BoundBlockStatement body)
         {
-            //_emitHelper.StartEmitFunction(declaration);
-            //EmitBlockStatement(body);
-            //_emitHelper.EndEmitFunction(declaration);
+            _emitHelper.StartEmitFunction(symbol);
+            EmitBlockStatement(body);
+            _emitHelper.EndEmitFunction();
         }
 
         private void EmitStatement(BoundStatement statement)

@@ -130,6 +130,8 @@ namespace Minsk.CodeAnalysis.Emit
         private readonly HostMethodDefinition _hostingHostMethodDefinition;
 
         private readonly AssemblyDefinition _hostAssemblyDefinition;
+        private readonly TypeDefinition _hostTypeDefinition;
+
         private readonly EmittingMethodFrame _hostMethodFrame;
 
         private EmittingMethodFrame _functionMethodFrame;
@@ -145,13 +147,13 @@ namespace Minsk.CodeAnalysis.Emit
 
             HostModule = _hostAssemblyDefinition.MainModule;
 
-            var hostTypeDefinition = new TypeDefinition(null, hostingHostMethodDefinition.TypeName,
+            _hostTypeDefinition = new TypeDefinition(null, hostingHostMethodDefinition.TypeName,
                 TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
 
-            HostModule.Types.Add(hostTypeDefinition);
+            HostModule.Types.Add(_hostTypeDefinition);
 
             _hostMethodFrame = EmittingMethodFrame.FromHostMethodDefinition(hostingHostMethodDefinition, HostModule);
-            hostTypeDefinition.Methods.Add(_hostMethodFrame.MethodDefinition);
+            _hostTypeDefinition.Methods.Add(_hostMethodFrame.MethodDefinition);
         }
 
         private ModuleDefinition HostModule { get; }
@@ -183,5 +185,18 @@ namespace Minsk.CodeAnalysis.Emit
         }
 
         public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
+
+        public void StartEmitFunction(FunctionSymbol symbol)
+        {
+            _functionMethodFrame = EmittingMethodFrame.FromSymbol(symbol);
+        }
+
+        public void EndEmitFunction()
+        {
+            _functionMethodFrame.FinalizeMethod();
+            _hostTypeDefinition.Methods.Add(_functionMethodFrame.MethodDefinition);
+
+            _functionMethodFrame = null;
+        }
     }
 }
