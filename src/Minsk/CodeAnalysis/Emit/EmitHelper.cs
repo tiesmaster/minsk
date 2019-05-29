@@ -29,7 +29,21 @@ namespace Minsk.CodeAnalysis.Emit
         public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
         public TypeSystem TypeSystem => _moduleDefinition.TypeSystem;
 
-        public static EmittingMethodFrame FromSymbol(FunctionSymbol symbol) => throw new NotImplementedException();
+        public static EmittingMethodFrame FromSymbol(FunctionSymbol symbol, EmitHelper emitHelper)
+        {
+            var methodDefinition = new MethodDefinition(symbol.Name,
+                MethodAttributes.Public | MethodAttributes.Static, emitHelper.HostModule.TypeSystem.Void);
+
+            foreach (var parameter in symbol.Parameters)
+            {
+                methodDefinition.Parameters.Add(new ParameterDefinition(
+                    parameter.Name,
+                    ParameterAttributes.None,
+                    emitHelper.ImportReference(parameter.Type)));
+            }
+
+            return new EmittingMethodFrame(emitHelper.HostModule, methodDefinition);
+        }
 
         public static EmittingMethodFrame FromHostMethodDefinition(
             HostMethodDefinition hostMethodDefinition,
@@ -156,7 +170,7 @@ namespace Minsk.CodeAnalysis.Emit
             _hostTypeDefinition.Methods.Add(_hostMethodFrame.MethodDefinition);
         }
 
-        private ModuleDefinition HostModule { get; }
+        public ModuleDefinition HostModule { get; }
 
         public EmittingMethodFrame CurrentMethodFrame => _functionMethodFrame ?? _hostMethodFrame;
         public TypeSystem TypeSystem => HostModule.TypeSystem;
@@ -188,7 +202,7 @@ namespace Minsk.CodeAnalysis.Emit
 
         public void StartEmitFunction(FunctionSymbol symbol)
         {
-            _functionMethodFrame = EmittingMethodFrame.FromSymbol(symbol);
+            _functionMethodFrame = EmittingMethodFrame.FromSymbol(symbol, this);
         }
 
         public void EndEmitFunction()
