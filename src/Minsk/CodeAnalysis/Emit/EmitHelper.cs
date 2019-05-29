@@ -202,7 +202,7 @@ namespace Minsk.CodeAnalysis.Emit
 
         public MethodReference ImportReference(FunctionSymbol symbol)
         {
-            throw new NotImplementedException();
+            return _hostTypeDefinition.Methods.Single(x => x.Name == symbol.Name);
         }
 
         public void StartEmitFunction(FunctionSymbol symbol)
