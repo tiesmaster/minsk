@@ -7,6 +7,7 @@ using Minsk.CodeAnalysis.Hosting;
 using Minsk.CodeAnalysis.Symbols;
 
 using Mono.Cecil.Cil;
+using Mono.Cecil;
 
 namespace Minsk.CodeAnalysis.Emit
 {
@@ -286,8 +287,16 @@ namespace Minsk.CodeAnalysis.Emit
                 EmitExpression(argument);
             }
 
-            var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-            Il.Emit(OpCodes.Call, _emitHelper.ImportReference(builtinFunctionWrapperMethod));
+            Il.Emit(OpCodes.Call, LookupFunction(node.Function));
+        }
+
+        private MethodReference LookupFunction(FunctionSymbol symbol)
+        {
+            var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(symbol);
+
+            return builtinFunctionWrapperMethod != null
+                ? _emitHelper.ImportReference(builtinFunctionWrapperMethod)
+                : _emitHelper.ImportReference(symbol);
         }
 
         private void EmitConversionExpression(BoundConversionExpression node)
@@ -307,9 +316,9 @@ namespace Minsk.CodeAnalysis.Emit
             return typeof(BuiltinFunctionImplementations).GetMethod(name);
         }
 
-        internal static MethodInfo LookupFunction(BoundCallExpression node)
+        internal static MethodInfo LookupFunction(FunctionSymbol symbol)
         {
-            return typeof(BuiltinFunctionImplementations).GetMethod(ToCamelCase(node.Function.Name));
+            return typeof(BuiltinFunctionImplementations).GetMethod(ToCamelCase(symbol.Name));
         }
 
         private static string ToCamelCase(TypeSymbol type) => ToCamelCase(type.ToString());

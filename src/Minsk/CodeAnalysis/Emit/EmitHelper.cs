@@ -200,6 +200,11 @@ namespace Minsk.CodeAnalysis.Emit
 
         public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
 
+        public MethodReference ImportReference(FunctionSymbol symbol)
+        {
+            throw new NotImplementedException();
+        }
+
         public void StartEmitFunction(FunctionSymbol symbol)
         {
             _functionMethodFrame = EmittingMethodFrame.FromSymbol(symbol, this);
