@@ -25,8 +25,8 @@ namespace Minsk.CodeAnalysis.Emit
 
         private void EmitProgram(BoundProgram program)
         {
-            EmitBlockStatement(program.Statement);
             EmitFunctions(program.Functions);
+            EmitBlockStatement(program.Statement);
         }
 
         private void EmitBlockStatement(BoundBlockStatement node)

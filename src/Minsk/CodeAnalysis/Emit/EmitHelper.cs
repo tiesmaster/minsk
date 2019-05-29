@@ -145,6 +145,7 @@ namespace Minsk.CodeAnalysis.Emit
 
         private readonly AssemblyDefinition _hostAssemblyDefinition;
         private readonly TypeDefinition _hostTypeDefinition;
+        private readonly Dictionary<FunctionSymbol, MethodDefinition> _definedFunctions = new Dictionary<FunctionSymbol, MethodDefinition>();
 
         private readonly EmittingMethodFrame _hostMethodFrame;
 
@@ -200,14 +201,14 @@ namespace Minsk.CodeAnalysis.Emit
 
         public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
 
-        public MethodReference ImportReference(FunctionSymbol symbol)
-        {
-            return _hostTypeDefinition.Methods.Single(x => x.Name == symbol.Name);
-        }
+        public MethodReference ImportReference(FunctionSymbol symbol) => _definedFunctions[symbol];
 
         public void StartEmitFunction(FunctionSymbol symbol)
         {
-            _functionMethodFrame = EmittingMethodFrame.FromSymbol(symbol, this);
+            var methodFrame = EmittingMethodFrame.FromSymbol(symbol, this);
+            _definedFunctions[symbol] = methodFrame.MethodDefinition;
+
+            _functionMethodFrame = methodFrame;
         }
 
         public void EndEmitFunction()
