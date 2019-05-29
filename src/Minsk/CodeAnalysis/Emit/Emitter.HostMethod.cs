@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using Minsk.CodeAnalysis.Binding;
@@ -10,9 +11,9 @@ namespace Minsk.CodeAnalysis.Emit
 {
     internal sealed partial class Emitter
     {
-        public HostMethod EmitHostMethod(BoundBlockStatement boundStatement)
+        public HostMethod EmitHostMethod(BoundProgram program)
         {
-            EmitBlockStatement(boundStatement);
+            EmitProgram(program);
 
             InsertEmitRestoreVariablesFromArgumentToStartOfMethod();
             EmitSaveVariables();

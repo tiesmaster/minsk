@@ -17,12 +17,12 @@ namespace Minsk.CodeAnalysis
         private readonly HostMethodDefinition _hostMethodDefinition =
             new HostMethodDefinition(_hostAssemblyName, _hostTypeName, _hostMethodName);
 
-        private readonly BoundBlockStatement _root;
+        private readonly BoundProgram _program;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public IlBackedEvaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables = null)
+        public IlBackedEvaluator(BoundProgram program, Dictionary<VariableSymbol, object> variables = null)
         {
-            _root = root;
+            _program = program;
             _variables = variables;
         }
 
@@ -30,7 +30,7 @@ namespace Minsk.CodeAnalysis
         {
             var emitter = new Emitter(_hostMethodDefinition);
 
-            var hostMethod = emitter.EmitHostMethod(_root);
+            var hostMethod = emitter.EmitHostMethod(_program);
             var result = hostMethod.Run(_variables);
 
             return result;
@@ -40,7 +40,7 @@ namespace Minsk.CodeAnalysis
         {
             var emitter = new Emitter(_hostMethodDefinition);
 
-            var hostMethod = emitter.EmitHostMethod(_root);
+            var hostMethod = emitter.EmitHostMethod(_program);
 
             hostMethod.WriteTo(writer);
         }

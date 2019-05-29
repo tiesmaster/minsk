@@ -20,6 +20,11 @@ namespace Minsk.CodeAnalysis.Emit
             _il = _emitHelper.HostMethodIlProcessor;
         }
 
+        private void EmitProgram(BoundProgram program)
+        {
+            EmitBlockStatement(program.Statement);
+        }
+
         private void EmitBlockStatement(BoundBlockStatement node)
         {
             foreach (var statement in node.Statements)
