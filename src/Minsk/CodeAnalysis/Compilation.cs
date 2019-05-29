@@ -81,13 +81,13 @@ namespace Minsk.CodeAnalysis
             program.Statement.WriteTo(writer);
         }
 
-        public void EmitIL(TextWriter writer)
-        {
-            var statement = GetStatement();
+        //public void EmitIL(TextWriter writer)
+        //{
+        //    var statement = GetStatement();
 
-            var evaluator = new IlBackedEvaluator(statement);
+        //    var evaluator = new IlBackedEvaluator(statement);
 
-            evaluator.WriteTo(writer);
-        }
+        //    evaluator.WriteTo(writer);
+        //}
     }
 }

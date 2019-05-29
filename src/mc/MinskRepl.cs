@@ -113,8 +113,8 @@ namespace Minsk
             if (_showProgram)
                 compilation.EmitTree(Console.Out);
 
-            if (_showIL)
-                compilation.EmitIL(Console.Out);
+            //if (_showIL)
+            //    compilation.EmitIL(Console.Out);
 
             var result = compilation.Evaluate(_variables, _useJit);
 
