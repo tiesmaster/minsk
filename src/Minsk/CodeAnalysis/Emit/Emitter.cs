@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Reflection;
 
 using Minsk.CodeAnalysis.Binding;
@@ -12,17 +13,19 @@ namespace Minsk.CodeAnalysis.Emit
     internal sealed partial class Emitter
     {
         private readonly EmitHelper _emitHelper;
-        private readonly ILProcessor _il;
 
         public Emitter(HostMethodDefinition hostMethodDefinition)
         {
             _emitHelper = new EmitHelper(hostMethodDefinition);
-            _il = _emitHelper.HostMethodIlProcessor;
         }
+
+        public EmittingMethodFrame CurrentMethodFrame => _emitHelper.CurrentMethodFrame;
+        public ILProcessor Il => CurrentMethodFrame.IlProcessor;
 
         private void EmitProgram(BoundProgram program)
         {
             EmitBlockStatement(program.Statement);
+            EmitFunctions(program.Functions);
         }
 
         private void EmitBlockStatement(BoundBlockStatement node)
@@ -31,6 +34,23 @@ namespace Minsk.CodeAnalysis.Emit
             {
                 EmitStatement(statement);
             }
+        }
+
+        private void EmitFunctions(ImmutableDictionary<FunctionSymbol, BoundBlockStatement> functions)
+        {
+            foreach (var kvp in functions)
+            {
+                var declaration = kvp.Key;
+                var body = kvp.Value;
+                EmitFunction(declaration, body);
+            }
+        }
+
+        private void EmitFunction(FunctionSymbol declaration, BoundBlockStatement body)
+        {
+            //_emitHelper.StartEmitFunction(declaration);
+            //EmitBlockStatement(body);
+            //_emitHelper.EndEmitFunction(declaration);
         }
 
         private void EmitStatement(BoundStatement statement)
@@ -60,10 +80,10 @@ namespace Minsk.CodeAnalysis.Emit
         private void EmitVariableDeclaration(BoundVariableDeclaration node)
         {
             EmitExpression(node.Initializer);
-            var slot = _emitHelper.GetOrCreateVariableSlot(node.Variable);
-            _il.Emit(OpCodes.Stloc, slot);
+            var slot = CurrentMethodFrame.GetOrCreateVariableSlot(node.Variable);
+            Il.Emit(OpCodes.Stloc, slot);
 
-            _il.Emit(OpCodes.Ldloc, slot);
+            Il.Emit(OpCodes.Ldloc, slot);
             EmitSaveResult(node.Variable.Type);
         }
 
@@ -75,29 +95,29 @@ namespace Minsk.CodeAnalysis.Emit
 
         private void EmitGotoStatement(BoundGotoStatement node)
         {
-            _emitHelper.AddJump(OpCodes.Br_S, node.Label);
+            CurrentMethodFrame.AddJump(OpCodes.Br_S, node.Label);
         }
 
         private void EmitConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             EmitExpression(node.Condition);
             var branchOpcode = node.JumpIfTrue ? OpCodes.Brtrue_S : OpCodes.Brfalse_S;
-            _emitHelper.AddJump(branchOpcode, node.Label);
+            CurrentMethodFrame.AddJump(branchOpcode, node.Label);
         }
 
         private void EmitLabelStatement(BoundLabelStatement node)
         {
-            _emitHelper.MarkLabel(node.Label);
+            CurrentMethodFrame.MarkLabel(node.Label);
         }
 
         private void EmitSaveResult(TypeSymbol resultType)
         {
             if (resultType != TypeSymbol.Void)
             {
-                _il.Emit(OpCodes.Box, _emitHelper.ImportReference(resultType));
+                Il.Emit(OpCodes.Box, _emitHelper.ImportReference(resultType));
             }
 
-            _il.Emit(OpCodes.Stloc_0);
+            Il.Emit(OpCodes.Stloc_0);
         }
 
         private void EmitExpression(BoundExpression node)
@@ -148,33 +168,33 @@ namespace Minsk.CodeAnalysis.Emit
 
         private void EmitBoolLiteral(bool value)
         {
-            _il.Emit(OpCodes.Ldc_I4, value ? 1 : 0);
+            Il.Emit(OpCodes.Ldc_I4, value ? 1 : 0);
         }
 
         private void EmitIntLiteral(int value)
         {
-            _il.Emit(OpCodes.Ldc_I4, value);
+            Il.Emit(OpCodes.Ldc_I4, value);
         }
 
         private void EmitStringLiteral(string value)
         {
-            _il.Emit(OpCodes.Ldstr, value);
+            Il.Emit(OpCodes.Ldstr, value);
         }
 
         private void EmitVariableExpression(BoundVariableExpression v)
         {
-            var slot = _emitHelper.GetOrCreateVariableSlot(v.Variable);
-            _il.Emit(OpCodes.Ldloc, slot);
+            var slot = CurrentMethodFrame.GetOrCreateVariableSlot(v.Variable);
+            Il.Emit(OpCodes.Ldloc, slot);
         }
 
         private void EmitAssignmentExpression(BoundAssignmentExpression a)
         {
             EmitExpression(a.Expression);
-            var slot = _emitHelper.GetOrCreateVariableSlot(a.Variable);
-            _il.Emit(OpCodes.Stloc, slot);
+            var slot = CurrentMethodFrame.GetOrCreateVariableSlot(a.Variable);
+            Il.Emit(OpCodes.Stloc, slot);
 
             // push result of the expression back on the stack, since this expression also produces a value downstream
-            _il.Emit(OpCodes.Ldloc, slot);
+            Il.Emit(OpCodes.Ldloc, slot);
         }
 
         private void EmitUnaryExpression(BoundUnaryExpression u)
@@ -186,14 +206,14 @@ namespace Minsk.CodeAnalysis.Emit
                 case BoundUnaryOperatorKind.Identity:
                     break;
                 case BoundUnaryOperatorKind.Negation:
-                    _il.Emit(OpCodes.Neg);
+                    Il.Emit(OpCodes.Neg);
                     break;
                 case BoundUnaryOperatorKind.LogicalNegation:
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    _il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Ldc_I4_0);
+                    Il.Emit(OpCodes.Ceq);
                     break;
                 case BoundUnaryOperatorKind.OnesComplement:
-                    _il.Emit(OpCodes.Not);
+                    Il.Emit(OpCodes.Not);
                     break;
                 default:
                     throw new Exception($"Unexpected unary operator {u.Op}");
@@ -208,51 +228,51 @@ namespace Minsk.CodeAnalysis.Emit
             switch (b.Op.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    _il.Emit(OpCodes.Add);
+                    Il.Emit(OpCodes.Add);
                     break;
                 case BoundBinaryOperatorKind.Subtraction:
-                    _il.Emit(OpCodes.Sub);
+                    Il.Emit(OpCodes.Sub);
                     break;
                 case BoundBinaryOperatorKind.Multiplication:
-                    _il.Emit(OpCodes.Mul);
+                    Il.Emit(OpCodes.Mul);
                     break;
                 case BoundBinaryOperatorKind.Division:
-                    _il.Emit(OpCodes.Div);
+                    Il.Emit(OpCodes.Div);
                     break;
                 case BoundBinaryOperatorKind.BitwiseXor:
-                    _il.Emit(OpCodes.Xor);
+                    Il.Emit(OpCodes.Xor);
                     break;
                 case BoundBinaryOperatorKind.LogicalAnd:
                 case BoundBinaryOperatorKind.BitwiseAnd:
-                    _il.Emit(OpCodes.And);
+                    Il.Emit(OpCodes.And);
                     break;
                 case BoundBinaryOperatorKind.LogicalOr:
                 case BoundBinaryOperatorKind.BitwiseOr:
-                    _il.Emit(OpCodes.Or);
+                    Il.Emit(OpCodes.Or);
                     break;
                 case BoundBinaryOperatorKind.Equals:
-                    _il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Ceq);
                     break;
                 case BoundBinaryOperatorKind.NotEquals:
-                    _il.Emit(OpCodes.Ceq);
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    _il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Ldc_I4_0);
+                    Il.Emit(OpCodes.Ceq);
                     break;
                 case BoundBinaryOperatorKind.Less:
-                    _il.Emit(OpCodes.Clt);
+                    Il.Emit(OpCodes.Clt);
                     break;
                 case BoundBinaryOperatorKind.LessOrEquals:
-                    _il.Emit(OpCodes.Cgt);
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    _il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Cgt);
+                    Il.Emit(OpCodes.Ldc_I4_0);
+                    Il.Emit(OpCodes.Ceq);
                     break;
                 case BoundBinaryOperatorKind.Greater:
-                    _il.Emit(OpCodes.Cgt);
+                    Il.Emit(OpCodes.Cgt);
                     break;
                 case BoundBinaryOperatorKind.GreaterOrEquals:
-                    _il.Emit(OpCodes.Clt);
-                    _il.Emit(OpCodes.Ldc_I4_0);
-                    _il.Emit(OpCodes.Ceq);
+                    Il.Emit(OpCodes.Clt);
+                    Il.Emit(OpCodes.Ldc_I4_0);
+                    Il.Emit(OpCodes.Ceq);
                     break;
                 default:
                     throw new Exception($"Unexpected binary operator {b.Op}: {b.Op.Kind}");
@@ -267,7 +287,7 @@ namespace Minsk.CodeAnalysis.Emit
             }
 
             var builtinFunctionWrapperMethod = BuiltinFunctionImplementations.LookupFunction(node);
-            _il.Emit(OpCodes.Call, _emitHelper.ImportReference(builtinFunctionWrapperMethod));
+            Il.Emit(OpCodes.Call, _emitHelper.ImportReference(builtinFunctionWrapperMethod));
         }
 
         private void EmitConversionExpression(BoundConversionExpression node)
@@ -275,7 +295,7 @@ namespace Minsk.CodeAnalysis.Emit
             EmitExpression(node.Expression);
 
             var conversionFunctionMethodWrapper = BuiltinFunctionImplementations.LookupFunction(node);
-            _il.Emit(OpCodes.Call, _emitHelper.ImportReference(conversionFunctionMethodWrapper));
+            Il.Emit(OpCodes.Call, _emitHelper.ImportReference(conversionFunctionMethodWrapper));
         }
     }
 

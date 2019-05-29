@@ -4,90 +4,73 @@ using System.IO;
 using System.Linq;
 
 using Minsk.CodeAnalysis.Binding;
+using Minsk.CodeAnalysis.Hosting;
 using Minsk.CodeAnalysis.Symbols;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Minsk.CodeAnalysis.Hosting;
 
 namespace Minsk.CodeAnalysis.Emit
 {
-    internal class EmitHelper
+    internal class EmittingMethodFrame
     {
-        private readonly HostMethodDefinition _hostingHostMethodDefinition;
-
-        private readonly AssemblyDefinition _hostAssemblyDefinition;
-
-        private readonly MethodDefinition _hostMethodDefinition;
-        private readonly Instruction _dummyJumpInstruction;
+        private readonly ModuleDefinition _moduleDefinition;
 
         private readonly Dictionary<VariableSymbol, int> _variables = new Dictionary<VariableSymbol, int>();
         private readonly List<(Instruction, BoundLabel)> _jumpPatchList = new List<(Instruction, BoundLabel)>();
         private readonly Dictionary<BoundLabel, Instruction> _labelMapping = new Dictionary<BoundLabel, Instruction>();
+        private readonly Instruction _dummyJumpInstruction;
 
-        // first variable slot is the result variable
-        private int _nextFreeVariableSlot = 1;
+        private int _nextFreeVariableSlot;
 
-        public EmitHelper(HostMethodDefinition hostingHostMethodDefinition)
-        {
-            _hostingHostMethodDefinition = hostingHostMethodDefinition;
-
-            _hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(
-                    _hostingHostMethodDefinition.AssemblyName,
-                    new Version(1, 0, 0, 0)), _hostingHostMethodDefinition.AssemblyName, ModuleKind.Dll);
-
-            HostModule = _hostAssemblyDefinition.MainModule;
-
-            var hostTypeDefinition = new TypeDefinition(null, _hostingHostMethodDefinition.TypeName,
-                TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
-
-            HostModule.Types.Add(hostTypeDefinition);
-
-            _hostMethodDefinition = new MethodDefinition(_hostingHostMethodDefinition.MethodName,
-                MethodAttributes.Public | MethodAttributes.Static, TypeSystem.Object);
-
-            _hostMethodDefinition.Parameters.Add(
-                new ParameterDefinition("variables", ParameterAttributes.None, HostModule.ImportReference(typeof(object[]))));
-
-            hostTypeDefinition.Methods.Add(_hostMethodDefinition);
-
-            HostMethodIlProcessor = _hostMethodDefinition.Body.GetILProcessor();
-
-            _dummyJumpInstruction = HostMethodIlProcessor.Create(OpCodes.Nop);
-            AddResultVariable();
-        }
-
-        public ILProcessor HostMethodIlProcessor { get; }
-        private ModuleDefinition HostModule { get; }
-        public TypeSystem TypeSystem => HostModule.TypeSystem;
+        public MethodDefinition MethodDefinition { get; }
+        public ILProcessor IlProcessor { get; }
 
         public IEnumerable<VariableDef> Variables => _variables.Select(kvp => new VariableDef(kvp.Key, kvp.Value));
+        public TypeSystem TypeSystem => _moduleDefinition.TypeSystem;
 
-        public HostMethod Finalize()
+        public static EmittingMethodFrame FromSymbol(FunctionSymbol symbol) => throw new NotImplementedException();
+
+        public static EmittingMethodFrame FromHostMethodDefinition(
+            HostMethodDefinition hostMethodDefinition,
+            ModuleDefinition moduleDefinition)
         {
-            PatchupJumps();
-            return CreateHostMethod();
+            var methodDefinition = new MethodDefinition(hostMethodDefinition.MethodName,
+                MethodAttributes.Public | MethodAttributes.Static, moduleDefinition.TypeSystem.Object);
+
+            methodDefinition.Parameters.Add(new ParameterDefinition(
+                "variables",
+                ParameterAttributes.None,
+                moduleDefinition.ImportReference(typeof(object[]))));
+
+            // first variable slot is the result variable
+            var nextFreeVariableSlot = 1;
+
+            var frame = new EmittingMethodFrame(moduleDefinition, methodDefinition, nextFreeVariableSlot);
+            frame.AddResultVariable();
+
+            return frame;
         }
 
-        private void PatchupJumps()
+        public EmittingMethodFrame(
+            ModuleDefinition moduleDefinition,
+            MethodDefinition methodDefinition,
+            int nextFreeVariableSlot = 0)
         {
-            foreach (var (jump, label) in _jumpPatchList)
-            {
-                var targetInstruction = _labelMapping[label].Next;
-                jump.Operand = targetInstruction;
-            }
+            _moduleDefinition = moduleDefinition;
+            MethodDefinition = methodDefinition;
+
+            _nextFreeVariableSlot = nextFreeVariableSlot;
+
+            IlProcessor = methodDefinition.Body.GetILProcessor();
+
+            _dummyJumpInstruction = IlProcessor.Create(OpCodes.Nop);
         }
 
-        private HostMethod CreateHostMethod()
+        public TypeReference ImportReference(TypeSymbol typeSymbol)
         {
-            using (var ms = new MemoryStream())
-            {
-                _hostAssemblyDefinition.Write(ms);
-
-                var peBytes = ms.ToArray();
-                return new HostMethod(_hostingHostMethodDefinition, peBytes, Variables);
-            }
+            var clrType = typeSymbol.ClrType;
+            return _moduleDefinition.ImportReference(clrType);
         }
 
         public int GetOrCreateVariableSlot(VariableSymbol variable)
@@ -106,15 +89,91 @@ namespace Minsk.CodeAnalysis.Emit
 
         public void MarkLabel(BoundLabel label)
         {
-            _labelMapping[label] = HostMethodIlProcessor.Body.Instructions.LastOrDefault();
+            _labelMapping[label] = IlProcessor.Body.Instructions.LastOrDefault();
         }
 
         public void AddJump(OpCode jumpOpcode, BoundLabel jumpLabel)
         {
-            var jumpInstruction = HostMethodIlProcessor.Create(jumpOpcode, _dummyJumpInstruction);
+            var jumpInstruction = IlProcessor.Create(jumpOpcode, _dummyJumpInstruction);
             _jumpPatchList.Add((jumpInstruction, jumpLabel));
 
-            HostMethodIlProcessor.Append(jumpInstruction);
+            IlProcessor.Append(jumpInstruction);
+        }
+
+        private void AddResultVariable()
+        {
+            MethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
+        }
+
+        private void AddVariable(TypeSymbol variableType)
+        {
+            MethodDefinition.Body.Variables.Add(new VariableDefinition(ImportReference(variableType)));
+        }
+
+        public void FinalizeMethod()
+        {
+            PatchupJumps();
+        }
+
+        private void PatchupJumps()
+        {
+            foreach (var (jump, label) in _jumpPatchList)
+            {
+                var targetInstruction = _labelMapping[label].Next;
+                jump.Operand = targetInstruction;
+            }
+        }
+    }
+
+    internal class EmitHelper
+    {
+        private readonly HostMethodDefinition _hostingHostMethodDefinition;
+
+        private readonly AssemblyDefinition _hostAssemblyDefinition;
+        private readonly EmittingMethodFrame _hostMethodFrame;
+
+        private EmittingMethodFrame _functionMethodFrame;
+
+        public EmitHelper(HostMethodDefinition hostingHostMethodDefinition)
+        {
+            _hostingHostMethodDefinition = hostingHostMethodDefinition;
+
+            _hostAssemblyDefinition = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition(
+                    hostingHostMethodDefinition.AssemblyName,
+                    new Version(1, 0, 0, 0)), hostingHostMethodDefinition.AssemblyName, ModuleKind.Dll);
+
+            HostModule = _hostAssemblyDefinition.MainModule;
+
+            var hostTypeDefinition = new TypeDefinition(null, hostingHostMethodDefinition.TypeName,
+                TypeAttributes.Class | TypeAttributes.Public, TypeSystem.Object);
+
+            HostModule.Types.Add(hostTypeDefinition);
+
+            _hostMethodFrame = EmittingMethodFrame.FromHostMethodDefinition(hostingHostMethodDefinition, HostModule);
+            hostTypeDefinition.Methods.Add(_hostMethodFrame.MethodDefinition);
+        }
+
+        private ModuleDefinition HostModule { get; }
+
+        public EmittingMethodFrame CurrentMethodFrame => _functionMethodFrame ?? _hostMethodFrame;
+        public TypeSystem TypeSystem => HostModule.TypeSystem;
+
+        public HostMethod Finalize()
+        {
+            _hostMethodFrame.FinalizeMethod();
+            return CreateHostMethod();
+        }
+
+        private HostMethod CreateHostMethod()
+        {
+            using (var ms = new MemoryStream())
+            {
+                _hostAssemblyDefinition.Write(ms);
+
+                var peBytes = ms.ToArray();
+                return new HostMethod(_hostingHostMethodDefinition, peBytes, _hostMethodFrame.Variables);
+            }
         }
 
         public TypeReference ImportReference(TypeSymbol typeSymbol)
@@ -124,15 +183,5 @@ namespace Minsk.CodeAnalysis.Emit
         }
 
         public MethodReference ImportReference(System.Reflection.MethodBase methodBase) => HostModule.ImportReference(methodBase);
-
-        private void AddResultVariable()
-        {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(TypeSystem.Object));
-        }
-
-        private void AddVariable(TypeSymbol variableType)
-        {
-            _hostMethodDefinition.Body.Variables.Add(new VariableDefinition(ImportReference(variableType)));
-        }
     }
 }
